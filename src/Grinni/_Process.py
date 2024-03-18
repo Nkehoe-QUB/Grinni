@@ -67,7 +67,7 @@ class Process():
     def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, get_new_tsteps=False, x_offset=None, y_offset=None):
         # Check if Diag is a valid diagnostic
         if not self.Simulation.getDiags(Diag):
-            raise ValueError(f"Diag {Diag} is not a valid diagnostic")
+            raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
         # Check if Name is a valid diagnostic
         if Name not in self.Simulation.getDiags(Diag)[1]:
             raise ValueError(f"Name {Name} is not a valid diagnostic")
@@ -94,7 +94,7 @@ class Process():
             elif units is not None:
                 MetaData = self.Simulation.Field(Name, Field, units=units)
             axis_names=['x', 'y']
-        else: raise ValueError(f"Diag {Diag} is not a valid diagnostic")
+        else: raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
 
         Values = self.np.array(MetaData.getData())
         self.TimeSteps = self.np.array(MetaData.getTimesteps())
@@ -192,7 +192,7 @@ class Process():
         for type in Species:
             Diag=type + ' density'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
-                raise ValueError(f"Diagnostic {type} is not a valid density diagnostic")
+                raise ValueError(f"Diagnostic '{Diag}' is not a valid density diagnostic")
             if type == "rel electron":
                 elec_den, axis[type] = self.GetData("ParticleBinning", "electron density", units=self.Units, x_offset=10 if x_offset is None else x_offset)
                 en_den = self.GetData("ParticleBinning", "electron energy density", Axis=False, x_offset=10 if x_offset is None else x_offset)
@@ -239,7 +239,7 @@ class Process():
         for type in Species:
             Diag=type + ' spectra'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
-                raise ValueError(f"Diagnostic {type} is not a valid spectra diagnostic")
+                raise ValueError(f"Diagnostic '{type}' is not a valid spectra diagnostic")
             if type == "rel electron":
                 elec_den, axis[type] = self.GetData("ParticleBinning", "electron density", units=self.Units)
                 en_den = self.GetData("ParticleBinning", "electron energy density", Axis=False)
@@ -294,7 +294,7 @@ class Process():
         for type in Species:
             Diag=type + ' ' + Phase + ' phase space'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
-                raise ValueError(f"Diagnostic {Diag} is not a valid phase space diagnostic")
+                raise ValueError(f"Diagnostic '{Diag}' is not a valid phase space diagnostic")
             phase_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10 if x_offset is None else x_offset)
             label[type] = type
         
@@ -349,7 +349,7 @@ class Process():
         for type in Species:
             Diag=type + ' angle'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
-                raise ValueError(f"Diagnostic {type} is not a valid angle diagnostic")
+                raise ValueError(f"Diagnostic '{type}' is not a valid angle diagnostic")
             angle_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10)
             label[type] = type
         
@@ -402,7 +402,7 @@ class Process():
         for type in Species:
             Diag=type + ' angle'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
-                raise ValueError(f"Diagnostic {type} is not a valid angle diagnostic")
+                raise ValueError(f"Diagnostic '{type}' is not a valid angle diagnostic")
             angle_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10)
             label[type] = type
         
@@ -460,7 +460,7 @@ class Process():
         for type in Species:
             Diag=type + ' density hi res'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
-                raise ValueError(f"Diagnostic {Diag} is not a valid hi-res density diagnostic")
+                raise ValueError(f"Diagnostic '{Diag}' is not a valid hi-res density diagnostic")
             if type == "rel electron":
                 elec_den, axis[type] = self.GetData("ParticleBinning", "electron density hi res", units=self.Units, x_offset=10 if x_offset is None else x_offset, get_new_tsteps=True)
                 en_den = self.GetData("ParticleBinning", "electron energy density hi res", Axis=False, x_offset=10 if x_offset is None else x_offset)
@@ -560,7 +560,7 @@ class Process():
         for type in Species:
             Diag=type + ' spectra'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
-                raise ValueError(f"Diagnostic {Diag} is not a valid density diagnostic")
+                raise ValueError(f"Diagnostic '{Diag}' is not a valid density diagnostic")
             spectra_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, get_new_tsteps=True)
             label[type] = type
         
@@ -602,3 +602,89 @@ class Process():
             fig.tight_layout()
             self.plt.savefig(self.folder_path + '/' + Derv_SaveFile + '.png',dpi=200)
         print(f"\nDensities over time saved in {self.folder_path}")
+
+    def Y0(self, Species=None, E=None, Field=None, FSpot=0, yMin=None, yMax=None, xMin=None, xMax=None, x_offset=None, y_offset=None, File=None):
+        if Species and E is None:
+            raise ValueError("No species or E-fields were provided")
+        if Field is None:
+            raise ValueError("No field was provided")
+        if len(E) != len(Field):
+            raise ValueError("E and Field must have the same length")
+        if FSpot == 0:
+            raise ValueError("No focal spot was provided")
+        elif FSpot < 1:
+            FSpot = FSpot/self.micro
+        data_to_plot={}
+        axis={}
+        label={}
+        if Species:
+            for type in Species:
+                Diag=type + ' density'
+                if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
+                    raise ValueError(f"Diagnostic '{Diag}' is not a valid density diagnostic")
+                if type == "rel electron":
+                    elec_den, axis[type] = self.GetData("ParticleBinning", "electron density", units=self.Units, x_offset=10 if x_offset is None else x_offset)
+                    en_den = self.GetData("ParticleBinning", "electron energy density", Axis=False)
+                    data_to_plot[type] = self.np.array(elec_den) / ((self.np.array(en_den) / self.np.array(elec_den)) + 1)
+                    label[type] = type
+                    continue
+                data_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10 if x_offset is None else x_offset)
+                label[type] = type
+        if E:
+            for type in E:
+                if type not in self.Simulation.getDiags("Fields")[1]:
+                    raise ValueError(f"Diagnostic '{type}' is not a valid spectra diagnostic")
+                data_to_plot[type], axis[type] = self.GetData("Fields", type, Field=Field[E.index(type)], units=self.Units, x_offset=10 if x_offset is None else x_offset, y_offset=10 if y_offset is None else y_offset)
+                label[type] = f"{type.split(' ')[0][0:2]} {Field[E.index(type)]}"
+                
+        print(f"\nPlotting line-out averaged over y±{FSpot/2}")
+        SaveFile=File if File is not None else "y0"
+        colours=['b','g','y','m','c']
+        for i in range(self.TimeSteps.size):
+            lnf=None
+            fig, ax = self.plt.subplots(num=1,clear=True, sharex=True)
+            if Species:
+                ax.set_ylabel('N [$N_c$]')
+                ax.set_yscale('log')
+                ax.set_ylim(1e-2 if yMin is None else yMin, 1e3 if yMax is None else yMax)
+                for type in Species:
+                    args=self.np.where(abs(axis[type]["y"])<=(FSpot/2))[0]
+                    lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), colours[Species.index(type)], label=f'{label[type]}')
+                    lnf=lns if lnf is None else lnf+lns
+                ax.hlines(1, axis[type]['x'][0], axis[type]['x'][-1], 'k')
+                ax.text(-5 if xMin is None else xMin, 1, 'Critical Density', fontsize=8)
+                if E:
+                    ax2=ax.twinx()
+                    ax2.set_ylabel('E [V/m]')
+                    ax2.set_ylim(-self.max_number, self.max_number)
+                    for type in E:
+                        args=self.np.where(abs(axis[type]["y"])<=(FSpot/2))[0]
+                        if type == "average fields":
+                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f'{label[type]}')
+                        elif type == "instant fields":
+                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f'{label[type]}')
+                        lnf=lns if lnf is None else lnf+lns
+            elif E:
+                ax.set_ylabel('E [V/m]')
+                ax.set_ylim(-self.max_number, self.max_number)
+
+                for type in E:
+                    args=self.np.where(abs(axis[type]["y"])<=(FSpot/2))[0]
+                    if type == "average fields":
+                        lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f'{label[type]}')
+                    elif type == "instant fields":
+                        lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f'{label[type]}')
+                    lnf=lns if lnf is None else lnf+lns
+            ax.set_xlim(-5 if xMin is None else xMin, 5 if xMax is None else xMax)
+            ax.set_title(f'{axis[type]["Time"][i]}fs')
+            ax.set_xlabel(r'x [$\mu$m]')
+            labs= [l.get_label() for l in lnf]
+            ax.legend(lnf, labs)
+            fig.tight_layout()
+            self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+            if self.Log: 
+                PrintPercentage(i, self.TimeSteps.size)
+        print(f"\nLine-outs saved in {self.folder_path}")
+        if self.Movie:
+            MakeMovie(self.folder_path, self.video_path, 0, self.TimeSteps.size, SaveFile)
+            print(f"\nMovies saved in {self.video_path}")
