@@ -37,23 +37,16 @@ def getCDSurf(x, y, den, spot, steps):
     import matplotlib.pyplot as plt
     den_time=np.zeros((len(x), steps))
     cd_sur=[]
-    y_arg=np.where(abs(y)<=spot/2)[0]
-    np.set_printoptions(threshold = np.inf)
+    y_arg=np.where(abs(y)<=(spot/2))[0]
     for i in range(steps):
         den_time[:,i]=np.mean(den[i][:,y_arg],axis=1)
-        # plt.figure()
-        # plt.plot(x,np.mean(den[i][:,y_arg],axis=1)) 
-        # plt.savefig('den_time_'+str(i)+'.png')
-        # plt.close()
-        # print(den_time[:,i])
         try: cd_sur=np.append(cd_sur,x[np.argwhere(den_time[:,i]>=1)[0]-1])
         except IndexError: cd_sur=np.append(cd_sur,np.nan)
-    # print(den_time)
     return cd_sur, den_time
 
 def GoTrans(Surf, Tau, Time):
     import numpy as np
-    try: arg=np.argwhere(Surf>=1)[0]
+    try: arg=np.argwhere(Surf>=1)[0][0]
     except IndexError: return False, np.nan
     else:
         Trans=False
@@ -78,7 +71,7 @@ def MakeMovie(GraphFolder, OutputFolder, initialfile, finalfile, quantity):
     height = h.shape[0]
     width = h.shape[1]
     FPS = 1.0
-    fourcc = VideoWriter_fourcc(*'XVID')
+    fourcc = VideoWriter_fourcc(*'mp4v')
     folder_path = OutputFolder
     if not(os.path.exists(folder_path) and os.path.isdir(folder_path)):
         os.mkdir(folder_path)
