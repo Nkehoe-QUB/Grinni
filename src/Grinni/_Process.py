@@ -1,7 +1,7 @@
 from ._Utils import Gau, getFWHM, getCDSurf, GoTrans, PrintPercentage, MakeMovie
 
 class Process():
-    def __init__(self, SimName=".", x_spot=0, Tau=0, Ped=None, Log=True, Movie=True):
+    def __init__(self, SimName=".", x_spot=0, Tau=0, x_sim=0, y_sim=0, Ped=None, Dim=2, Log=True, Movie=True):
         ########### Constants ##################################
         self.c = 299792458. 
         self.me = 9.11e-31
@@ -20,6 +20,8 @@ class Process():
         ########################################################
         import happi
         import numpy as np
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         import matplotlib.colors as colors
         import matplotlib.gridspec as gridspec
@@ -33,13 +35,24 @@ class Process():
         self.cm = colors
         self.gs = gridspec
         self.SimName = SimName
+        self.Dim = Dim
         self.Log = Log
         self.Movie = Movie
-        self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s"]
+        self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'um^-3*kg^-1*(m/s)^-1']
         self.Simulation = self.happi.Open(self.SimName, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"Simulation {self.SimName} does not exist")
         else: print(f"\nSimulation {self.SimName} loaded")
+        if x_sim == 0 or y_sim == 0 or x_spot == 0 or Tau == 0:
+            raise ValueError("No spot size or simulation size or Tau value was provided")
+        self.x_sim = x_sim
+        if self.x_sim < 1:
+            print("\nx_sim is in meters, converting to micrometers")
+            self.x_sim = self.x_sim/self.micro
+        self.y_sim = y_sim
+        if self.y_sim < 1:
+            print("\ny_sim is in meters, converting to micrometers")
+            self.y_sim = self.y_sim/self.micro
         self.x_spot = x_spot 
         if self.x_spot > 1:
             print("\nx_spot is in meters, converting to micrometers")
@@ -66,6 +79,9 @@ class Process():
             self.os.mkdir(self.video_path)
         print(f"\nVideos will be saved in {self.video_path}")
     
+    def moving_average(self, x, w):
+        return self.np.convolve(x, self.np.ones(w), 'valid') / w
+
     def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, get_new_tsteps=False, x_offset=None, y_offset=None):
         # Check if Diag is a valid diagnostic
         if not self.Simulation.getDiags(Diag):
@@ -88,8 +104,13 @@ class Process():
                 MetaData = self.Simulation.ParticleBinning(Name)
             elif units is not None:
                 MetaData = self.Simulation.ParticleBinning(Name, units=units)
-            gridA=self.Simulation.namelist.Main.grid_length[0]*self.Simulation.namelist.Main.grid_length[1]
-            axis_names=['x', 'y', 'user_function0', 'ekin', 'px', 'py']
+            if self.Dim == 2:
+                gridA=self.Simulation.namelist.Main.grid_length[0]*self.Simulation.namelist.Main.grid_length[1] 
+                axis_names=['x', 'y', 'user_function0', 'ekin', 'px', 'py']
+            elif self.Dim == 3:
+                gridA = self.Simulation.namelist.Main.grid_length[0]*self.Simulation.namelist.Main.grid_length[1]*self.Simulation.namelist.Main.grid_length[-1]
+                axis_names=['x', 'y', 'z', 'user_function0', 'ekin', 'px', 'py']
+            
         elif Diag == "Fields":
             if units is None:
                 MetaData = self.Simulation.Field(Name, Field)
@@ -113,50 +134,31 @@ class Process():
             axis_data = self.np.array(MetaData.getAxis(axis_name))
             if len(axis_data)==0:
                     continue
-            if axis_name == "x":
+            elif axis_name == "x":
                 axis_data = axis_data - x_offset if x_offset is not None else axis_data  
-            if axis_name == "y":
+            elif axis_name == "y":
                 axis_data = axis_data - y_offset if y_offset is not None else axis_data - ((axis_data[0]+axis_data[-1])/2)
-            if axis_name == "user_function0":
-                tmp_bin=(axis_data[1]-axis_data[0])*gridA
-                if bin_size is None:
-                    bin_size=tmp_bin
-                else: bin_size = self.np.array([tmp_bin * b for b in bin_size])
+            elif axis_name == "z":
+                axis_data = axis_data  
+            elif axis_name == "user_function0":
+                bin_size=(axis_data[1]-axis_data[0]) if bin_size is None else bin_size*(axis_data[1]-axis_data[0])
             elif axis_name == "ekin":
                 if "carbon" in Name:
-                    Z=6
+                    Z=12
                 elif "proton" in Name:
                     Z=1
                 elif "electron" in Name:
                     Z=1
-                axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z,ndmin=2)
-                tmp_bin=[(axis_data[0][1]-axis_data[0][0])*gridA]
+                bin_size = ((self.x_sim*self.y_sim) if self.Dim==2 else (self.x_sim*self.y_sim*self.y_sim) ) if bin_size is None else bin_size*((self.x_sim*self.y_sim) if self.Dim==2 else (self.x_sim*self.y_sim*self.y_sim))
+                axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z)
                 for t in self.TimeSteps[1:]:
-                    tmp=self.np.array(MetaData.getAxis('ekin', timestep=t)/Z,ndmin=2)
-                    axis_data = self.np.append(axis_data,tmp, axis=0)
-                    tmp_bin.append((tmp[0][1]-tmp[0][0])*gridA)
-                if bin_size is None:
-                    bin_size=self.np.array(tmp_bin)
-                    axis['bin_size'] = bin_size
-                else:
-                    bin_size = self.np.array([bin_size / gridA * b for b in tmp_bin])
+                    axis_data=self.np.vstack((axis_data, MetaData.getAxis('ekin', timestep=t)/Z))
             elif axis_name == "px":
-                axis_data = self.np.array(MetaData.getAxis('px', timestep=self.TimeSteps[0]),ndmin=2)
                 if "x-px" in Name:
-                    tmp_bin=[(axis_data[0][1]-axis_data[0][0])*self.Simulation.namelist.Main.grid_length[1]]
-                elif "px-py" in Name:
-                    tmp_bin=[(axis_data[0][1]-axis_data[0][0])*gridA]
+                    bin_size = ((self.x_sim*self.y_sim*(axis['x'][1]-axis['x'][0])) if self.Dim==2 else (self.x_sim*self.y_sim*self.y_sim*(axis['x'][1]-axis['x'][0])) ) if bin_size is None else bin_size*((self.x_sim*self.y_sim*(axis['x'][1]-axis['x'][0])) if self.Dim==2 else (self.x_sim*self.y_sim*self.y_sim*(axis['x'][1]-axis['x'][0])))
+                axis_data = self.np.array(MetaData.getAxis('px', timestep=self.TimeSteps[0]),ndmin=2)
                 for t in self.TimeSteps[1:]:
-                    tmp=self.np.array(MetaData.getAxis('px', timestep=t),ndmin=2)
-                    axis_data = self.np.append(axis_data,tmp, axis=0)
-                    if "x-px" in Name:
-                        tmp_bin.append((tmp[0][1]-tmp[0][0])*self.Simulation.namelist.Main.grid_length[1])
-                    elif "px-py" in Name:
-                        tmp_bin.append((tmp[0][1]-tmp[0][0])*gridA)
-                if bin_size is None:
-                    bin_size=self.np.array(tmp_bin)
-                else:
-                    bin_size = self.np.array(bin_size * tmp_bin)
+                    axis_data = self.np.vstack(axis_data,self.np.array(MetaData.getAxis('px', timestep=t)))
             elif axis_name == "py":
                 axis_data = self.np.array(MetaData.getAxis('py', timestep=self.TimeSteps[0]),ndmin=2)
                 tmp_bin=[(axis_data[0][1]-axis_data[0][0])]
@@ -170,19 +172,15 @@ class Process():
                     bin_size = self.np.array(bin_size * tmp_bin)
             axis[axis_name] = axis_data
         if Data: 
-            if all(key in axis.keys() for key in ["ekin", "user_function0"]) or any(key in axis.keys() for key in ["px", "py"]):
-                if Axis: return Values * bin_size.reshape(-1,1,1) if bin_size is not None else Values, axis
-                else: return Values * bin_size.reshape(-1,1,1) if bin_size is not None else Values
-            else:
-                if Axis: return Values * bin_size.reshape(-1,1) if bin_size is not None else Values, axis
-                else: return Values * bin_size.reshape(-1,1) if bin_size is not None else Values
+            if Axis: return Values * bin_size if bin_size is not None else Values, axis
+            else: return Values * bin_size if bin_size is not None else Values
         elif Axis: return axis
         else: raise ValueError("No data or axis requested")
         
     def DensityPlot(self, Species=[], E_las=False, E_avg=False, Field=None, Colours=None, Min=None, Max=None, x_offset=None, y_offset=None, File=None):
-        if not Species:
-            raise ValueError("No species were provided")
-        if not isinstance(Species, list):
+        if not Species and (E_las and E_avg) is None:
+            raise ValueError("No species or field were provided")
+        if Species and not isinstance(Species, list):
             Species = [Species]
         if Colours is not None and not isinstance(Colours, list):
             if not isinstance(Colours, str):
@@ -203,18 +201,20 @@ class Process():
         den_to_plot={}
         axis={}
         TempFile=File if File is not None else "density"
-        for type in Species:
-            Diag=type + ' density'
-            if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
-                raise ValueError(f"Diagnostic '{Diag}' is not a valid density diagnostic")
-            if type == "rel electron":
-                elec_den, axis[type] = self.GetData("ParticleBinning", "electron density", units=self.Units, x_offset=10 if x_offset is None else x_offset)
-                en_den = self.GetData("ParticleBinning", "electron energy density", Axis=False, x_offset=10 if x_offset is None else x_offset)
-                den_to_plot[type] = self.np.array(elec_den) / ((self.np.array(en_den) / self.np.array(elec_den)) + 1)
-                continue
-            den_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10 if x_offset is None else x_offset)
+        if Species:
+            for type in Species:
+                Diag=type + ' density'
+                if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
+                    raise ValueError(f"Diagnostic '{Diag}' is not a valid density diagnostic")
+                if type == "rel electron":
+                    elec_den, axis[type] = self.GetData("ParticleBinning", "electron density", units=self.Units, x_offset=10 if x_offset is None else x_offset)
+                    en_den = self.GetData("ParticleBinning", "electron energy density", Axis=False, x_offset=10 if x_offset is None else x_offset)
+                    den_to_plot[type] = self.np.array(elec_den) / ((self.np.array(en_den) / self.np.array(elec_den)) + 1)
+                    continue
+                den_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10 if x_offset is None else x_offset)
         
-        print(f"\nPlotting {Species} densities")
+        if Species: print(f"\nPlotting {Species} densities")
+        else: print(f"\nPlotting {Field} field")
         FinalFile = self.TimeSteps.size
         for i in range(self.TimeSteps.size):
             fig, ax = self.plt.subplots(num=1,clear=True)
@@ -227,20 +227,24 @@ class Process():
                     cax1=ax.pcolormesh(E_axis['x'], E_axis['y'], field, cmap='bwr', norm=self.cm.CenteredNorm(halfrange=self.max_number))
                     cbar1 = fig.colorbar(cax1, aspect=50)
                     cbar1.set_label('E$_y$ [V/m]')
-            for type in Species:
-                SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                den = self.np.swapaxes(den_to_plot[type][i], 0, 1)
-                cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den, cmap='jet' if Colours is None else Colours[Species.index(type)], norm=self.cm.LogNorm(vmin=1e-2 if Min is None else Min, vmax=1e3 if Max is None else Max))
-                if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg):
+            if Species:
+                for type in Species:
+                    SaveFile=TempFile if File is not None else f"{type}_" + TempFile
+                    den = self.np.swapaxes(den_to_plot[type][i], 0, 1)
+                    cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den, cmap='jet' if Colours is None else Colours[Species.index(type)], norm=self.cm.LogNorm(vmin=1e-2 if Min is None else Min, vmax=1e3 if Max is None else Max))
+                    if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg):
+                        cbar=fig.colorbar(cax, aspect=50)
+                        cbar.set_label(f'N$_{{{type}}}$ [$N_c$]')
+                if (Colours is None) or (len(Colours) == 1):
                     cbar=fig.colorbar(cax, aspect=50)
-                    cbar.set_label(f'N$_{{{type}}}$ [$N_c$]')
-            if (Colours is None) or (len(Colours) == 1):
-                cbar=fig.colorbar(cax, aspect=50)
-                cbar.set_label('N [$N_c$]')
+                    cbar.set_label('N [$N_c$]')
+            ax.grid(True)
             ax.set_xlabel(r'x [$\mu$m]')
             ax.set_ylabel(r'y [$\mu$m]')
-            ax.set_title(f'{axis[type]['Time'][i]}fs')
+            if Species: ax.set_title(f'{axis[type]['Time'][i]}fs')
+            else: ax.set_title(f'{E_axis["Time"][i]}fs')
             fig.tight_layout()
+            if not Species: SaveFile=TempFile if File is not None else f"{Field}_" + TempFile
             self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size)
@@ -249,7 +253,7 @@ class Process():
             MakeMovie(self.folder_path, self.video_path, 0, FinalFile, SaveFile)
             print(f"\nMovies saved in {self.video_path}")
             
-    def SpectraPlot(self, Species=[], Min=None, Max=None, File=None):
+    def SpectraPlot(self, Species=[], Min=None, Max=None, xMax=None, File=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -299,9 +303,9 @@ class Process():
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                 ax.plot(axis[type]['ekin'][i], spect_to_plot[type][i], label=f'{label[type]}')
             ax.set_xlabel('E [$MeV$]')
-            ax.set_xlim(0,x_max)
-            ax.set_ylim(1e-7 if Min is None else Min,1e1 if Max is None else Max)
-            ax.set_ylabel('dNdE [$N_c$]')
+            ax.set_xlim(0,x_max if xMax is None else xMax)
+            ax.set_ylim(1e4 if Min is None else Min,1e11 if Max is None else Max)
+            ax.set_ylabel('dNdE [MeV$^{-1}$]')
             ax.set_yscale('log')
             ax.legend()
             ax.set_title(f'{axis[type]["Time"][i]}fs')
@@ -315,13 +319,6 @@ class Process():
             print(f"\nMovies saved in {self.video_path}")
 
     def PhaseSpacePlot(self, Species=[], Phase=None, Min=None, Max=None, x_offset=None, File=None):
-        def momentum_to_energy(momentum):
-            mom = (self.np.sqrt((momentum*3e8)**2+(1.67E-27*3e8**2)**2)-(1.67E-27*3e8**2))/1.602e-13
-            for i in range(len(momentum)):
-                if momentum[i] < 0:
-                    mom[i] = -mom[i]
-            return mom
-        
         if not Species:
             raise ValueError("No phase spaces were provided")
         if not isinstance(Species, list):
@@ -342,47 +339,50 @@ class Process():
         
         print(f"\nPlotting {Species} phase spaces")
         Phase = Phase.split('-')
+        for p in range(len(Phase)):
+            if Phase[p] == "energy":
+                Phase[p] = "ekin"
+                break
         for type in Species:
             max0 = 0
             min0 = 0
             max1 = 0
             min1 = 0
-            for i in range(self.TimeSteps.size):
-                if Phase[1] == "py" :
-                    if self.np.max(axis[type][Phase[1]][i]) > max1:
-                        max1 = self.np.max(axis[type][Phase[1]][i])
-                    if self.np.min(axis[type][Phase[1]][i]) < min1:
-                        min1 = self.np.min(axis[type][Phase[1]][i])
-                    
-                if self.np.max(axis[type]["px"][i]) > max0:
-                    max0 = self.np.max(axis[type]["px"][i])
-                if self.np.min(axis[type]["px"][i]) < min0:
-                    min0 = self.np.min(axis[type]["px"][i])
+            if "px" in Phase:
+                for i in range(self.TimeSteps.size):
+                    if Phase[1] == "py" :
+                        if self.np.max(axis[type][Phase[1]][i]) > max1:
+                            max1 = self.np.max(axis[type][Phase[1]][i])
+                        if self.np.min(axis[type][Phase[1]][i]) < min1:
+                            min1 = self.np.min(axis[type][Phase[1]][i])
+                        
+                    if self.np.max(axis[type]["px"][i]) > max0:
+                        max0 = self.np.max(axis[type]["px"][i])
+                    if self.np.min(axis[type]["px"][i]) < min0:
+                        min0 = self.np.min(axis[type]["px"][i])
             for i in range(self.TimeSteps.size):
                 fig, ax = self.plt.subplots(num=1,clear=True)
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                 momentum = self.np.swapaxes(phase_to_plot[type][i], 0, 1)
-                ax.pcolormesh(axis[type][Phase[0]] if Phase[0] not in ["px" or "py"] else axis[type][Phase[0]][i], axis[type][Phase[1]][i], momentum, cmap='jet', norm=self.cm.LogNorm())
-                #vmin=1e-2 if Min is None else Min, vmax=1e2 if Max is None else Max
-                if Phase[0] == "x":
-                    # ax2 = ax.twinx()
-                    # ax2.set_ylabel('E [MeV]')
-                    # ax.yaxis.grid(True)
+                X = axis[type][Phase[0]] if Phase[0] not in ["px" or "py"] else axis[type][Phase[0]][i]
+                Y = axis[type][Phase[1]][i]
+                cax = ax.pcolormesh(X, Y, momentum, cmap='jet', norm=self.cm.LogNorm(vmin=1e2 if Min is None else Min, vmax=1e10 if Max is None else Max))
+                cbar = fig.colorbar(cax, aspect=50)
+                if Phase[1] == "px":
                     ax.set_xlabel(r'x [$\mu$m]')
-                    ax.set_ylabel('px [kgms$^{-1}$]')
+                    ax.set_ylabel('px [kgm/s]')
                     ax.set_ylim(min0,max0)
-                    # ylims = ax.get_ylim()
-                    # yticks = ax.get_yticks()
-                    # energy_lims = momentum_to_energy(self.np.array(ylims))
-                    # energy_ticks = momentum_to_energy(self.np.array(yticks))
-                    # ax2.set_ylim(energy_lims)
-                    # ax2.set_yticks(energy_ticks)
-                    # ax2.set_yticklabels([f'{tick:.2f}' for tick in energy_ticks])
-                else:
+                    cbar.set_label('dndpx [(kgm/s)$^{-1}$]')
+                elif Phase[1] == "py":
                     ax.set_ylabel('py [kgms$^{-1}$]')
                     ax.set_xlabel('px [kgms$^{-1}$]')
                     ax.set_ylim(min1,max1)
                     ax.set_xlim(min0,max0)
+                elif Phase[1] == "ekin":
+                    ax.set_xlabel(r'x [$\mu$m]')
+                    ax.set_ylabel('Energy [MeV]')
+                    ax.set_ylim(0,1e3)
+                cbar.set_label('dn')
                 ax.set_title(f'{axis[type]["Time"][i]}fs')
                 fig.tight_layout()
                 self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
@@ -423,7 +423,9 @@ class Process():
                 for type in Species:
                     SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                     angles = self.np.swapaxes(angle_to_plot[type][i], 0, 1)
-                    ax.pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angles, cmap='jet', norm=self.cm.LogNorm(vmin=1e-7 if Min is None else Min, vmax=1e2 if Max is None else Max))
+                    try: ax.pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angles, cmap='jet', norm=self.cm.LogNorm(vmin=1e4 if Min is None else Min, vmax=1e10 if Max is None else Max))
+                    except ValueError: 
+                        continue
                     ax.set_xlim(-self.np.pi/3,self.np.pi/3)
                     ax.set_ylim(0,EMax[0])
                     ax.set_title(f'{label[type]}')
@@ -432,7 +434,7 @@ class Process():
                 for type in Species:
                     SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                     angles = self.np.swapaxes(angle_to_plot[type][i], 0, 1)
-                    ax[Species.index(type)].pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angles, cmap='jet', norm=self.cm.LogNorm(vmin=1e-7 if Min is None else Min, vmax=1e2 if Max is None else Max))
+                    ax[Species.index(type)].pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angles, cmap='jet', norm=self.cm.LogNorm(vmin=1e4 if Min is None else Min, vmax=1e10 if Max is None else Max))
                     ax[Species.index(type)].set_title(f'{label[type]}')
                     ax[Species.index(type)].set_xlim(-self.np.pi/3,self.np.pi/3)
                     ax[Species.index(type)].set_ylim(0,EMax[Species.index(type)])
@@ -447,11 +449,13 @@ class Process():
             MakeMovie(self.folder_path, self.video_path, 0, self.TimeSteps.size, SaveFile)
             print(f"\nMovies saved in {self.video_path}")
 
-    def AngleEnergyPlot(self, Species=[], Min=[], Max=[], File=None):
+    def AngleEnergyPlot(self, Species=[], Min=[], Max=[], Angles=[], File=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
             Species = [Species]
+        if not isinstance(Angles, list):
+            Angles = [Angles]
         angle_to_plot={}
         axis={}
         label={}
@@ -472,26 +476,49 @@ class Process():
                     if self.np.max(axis[type]['ekin'][i]) > x_max:
                         x_max = self.np.max(axis[type]['ekin'][i])
             EMax.append(x_max)
+
+            # dfs = []
+            # for i in range(self.TimeSteps.size):
+            #     for a in range(len(axis[type]['user_function0'])):
+            #         df =self.pd.DataFrame({
+            #             'Time':axis[type]['Time'][i],
+            #             'Energy':axis[type]['ekin'][i],
+            #             'Angle':axis[type]['user_function0'],
+            #             'dNdE':angle_to_plot[type][i][a,:]
+            #             })
+            #     dfs.append(df)
+            # dfs = self.pd.concat(dfs)
+            # with open(self.os.path.join(self.simulation_path, f'{type}_AngEnergy.csv'), 'w') as file:
+            #     dfs.to_csv(file, index=False)
+
+            # print(f"\n{type} energies saved in {self.simulation_path}")
         for type in Species:
             for i in range(self.TimeSteps.size):
                 fig, ax = self.plt.subplots(num=1,clear=True)
-                SaveFile=TempFile if File is not None else f"{type}_" + TempFile
+                SaveFile= TempFile + f"_{type}" 
                 if self.np.max(axis[type]['ekin'][i]) <= EMax[Species.index(type)]/10:
                     InitialFile=i+1
                     continue
-                FWHM_rad, FWHM_deg = getFWHM(axis[type]['user_function0'], angle_to_plot[type][i], axis[type]["ekin"][i])
                 Eng_Den = self.np.swapaxes(angle_to_plot[type][i], 0, 1)
-                A0_arg = self.np.argwhere(axis[type]['user_function0']==abs(axis[type]['user_function0']).min())[0]
-                A2_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/2)
-                A4_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/4)
-                A2_energies = self.np.sum(Eng_Den[:,A2_arg],axis=1)
-                A4_energies = self.np.sum(Eng_Den[:,A4_arg],axis=1)
-                ax.plot(axis[type]["ekin"][i],Eng_Den[:,A0_arg], label=r'$\theta$ $\equal$ 0$\degree$')
-                ax.plot(axis[type]["ekin"][i],A4_energies,label=fr'$\theta$ $\equal$ {FWHM_deg/4}$\degree$')
-                ax.plot(axis[type]["ekin"][i],A2_energies,label=fr'$\theta$ $\equal$ {FWHM_deg/2}$\degree$')
+                for j in (Angles):
+                    if j=='FWHM':
+                        FWHM_rad, FWHM_deg = getFWHM(axis[type]['user_function0'], angle_to_plot[type][i], axis[type]["ekin"][i])
+                        A2_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/2)
+                        A4_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/4)
+                        A2_energies = self.np.sum(Eng_Den[:,A2_arg],axis=1)
+                        A4_energies = self.np.sum(Eng_Den[:,A4_arg],axis=1)
+                        ax.plot(axis[type]["ekin"][i],A4_energies,label=fr'$\theta$ $\equal$ $\pm${FWHM_deg/4}$\degree$')
+                        ax.plot(axis[type]["ekin"][i],A2_energies, label=fr'$\theta$ $\equal$ $\pm${FWHM_deg/2}$\degree$')
+                    elif j == 0:
+                        A0_arg = self.np.argwhere(axis[type]['user_function0']==abs(axis[type]['user_function0']).min())[0]
+                        ax.plot(axis[type]["ekin"][i],Eng_Den[:,A0_arg], label=r'$\theta$ $\equal$ 0$\degree$')
+                    else:
+                        A_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=self.np.radians(j))
+                        A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
+                        ax.plot(axis[type]["ekin"][i][1:-1], self.moving_average(A_energies, 3),  label=fr'$\theta$ $\equal$ $\pm${j}$\degree$')
                 ax.set_yscale('log')
                 ax.set_xlim(0,EMax[Species.index(type)])
-                ax.set_ylim(1e-7 if Min is None else Min, 1e1 if Max is None else Max)
+                ax.set_ylim(1e4 if Min is None else Min, 1e10 if Max is None else Max)
                 ax.set_xlabel('Energy [MeV/u]')
                 ax.set_ylabel('dnde [$N_c$]')
                 ax.legend()
