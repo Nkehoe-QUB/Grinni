@@ -1,8 +1,8 @@
 # Grinni
-Pyhton package to automate plotting of SMILEI data.
+Python package to automate plotting of SMILEI data.
 
 ## Get Grinni
-Within the directory you want Grinni to live, e.g ~/software, run:
+Within the directory you want Grinni to live, e.g `~/software`, run:
 ```
 git clone https://github.com/Nkehoe-QUB/Grinni
 ```
@@ -15,7 +15,7 @@ conda env create -f requiremnts.yml
 ```
 
 ## Install Grinni into your environment
-Within the Grinni directory (~/software/Grinni) run:
+Within the Grinni directory (`~/software/Grinni`) run:
 ```
 pip install .
 ```
