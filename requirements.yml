@@ -1,0 +1,15 @@
+name: smilei-analysis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - numpy
+  - pandas
+  - cmcrameri
+  - scipy
+  - matplotlib
+  - opencv
+  - yt
+  - h5py
+  - hatchling
