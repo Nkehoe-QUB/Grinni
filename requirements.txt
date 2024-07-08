@@ -3,6 +3,6 @@ pandas==2.2.1
 cmcrameri==1.9
 scipy==1.12.0
 matplotlib==3.8.3
-opencv==4.9.0
+opencv_python==4.10.0.84
 h5py==3.10.0
 hatchling==1.25.0
