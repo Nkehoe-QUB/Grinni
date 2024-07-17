@@ -6,3 +6,4 @@ matplotlib==3.8.3
 opencv_python==4.10.0.84
 h5py==3.10.0
 hatchling==1.25.0
+Pint==0.24.3
