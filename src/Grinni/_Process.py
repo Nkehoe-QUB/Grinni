@@ -220,7 +220,7 @@ class Process():
                     FUnit = 'V/m' if 'E' in Field else 'T'
                     cax1=ax.pcolormesh(E_axis['x'], E_axis['y'], field, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
                     cbar1 = fig.colorbar(cax1, aspect=50)
-                    cbar1.set_label(f'{Field} [{FUnit}]')
+                    cbar1.set_label(f"{Field} [{FUnit}]")
             if Species:
                 for type in Species:
                     SaveFile=TempFile if File is not None else f"{type}_" + TempFile
@@ -228,18 +228,18 @@ class Process():
                     cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den, cmap=self.cmaps.batlow_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
                     if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg):
                         cbar=fig.colorbar(cax, aspect=50)
-                        cbar.set_label(f'N$_{{{type}}}$ [$N_c$]')
+                        cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
                 if (Colours is None) or (len(Colours) == 1):
                     cbar=fig.colorbar(cax, aspect=50)
                     cbar.set_label('N [$N_c$]')
             ax.grid(True)
             ax.set_xlabel(r'x [$\mu$m]')
             ax.set_ylabel(r'y [$\mu$m]')
-            if Species: ax.set_title(f'{axis[type]['Time'][i]}fs')
-            else: ax.set_title(f'{E_axis["Time"][i]}fs')
+            if Species: ax.set_title(f"{axis[type]['Time'][i]}fs")
+            else: ax.set_title(f"{E_axis['Time'][i]}fs")
             fig.tight_layout()
             if not Species: SaveFile=TempFile if File is not None else f"{Field}_" + TempFile
-            self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+            self.plt.savefig(self.folder_path + "/" + SaveFile + "_" + str(i) + ".png",dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
         print(f"\nDensities saved in {self.folder_path}")
@@ -282,7 +282,7 @@ class Process():
                     })
                 dfs.append(df)
             dfs = self.pd.concat(dfs)
-            with open(self.os.path.join(self.simulation_path, f'{type.replace(' ','_')}_energy.csv'), 'w') as file:
+            with open(self.os.path.join(self.simulation_path, f"{type.replace(' ','_')}_energy.csv"), 'w') as file:
                 dfs.to_csv(file, index=False)
 
             print(f"\n{type} energies saved in {self.simulation_path}")
@@ -290,7 +290,7 @@ class Process():
             fig, ax = self.plt.subplots(num=1,clear=True)
             for type in Species:
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                ax.plot(axis[type]['ekin'][i], spect_to_plot[type][i], label=f'{label[type]}')
+                ax.plot(axis[type]['ekin'][i], spect_to_plot[type][i], label=f"{label[type]}")
             ax.set_xlabel('E [$MeV$]')
             ax.set_xlim(0,x_max if XMax is None else XMax)
             ax.set_ylim(1e4 if YMin is None else YMin,1e11 if YMax is None else YMax)
@@ -298,7 +298,7 @@ class Process():
             ax.set_yscale('log')
             ax.grid(True)
             ax.legend()
-            ax.set_title(f'{axis[type]["Time"][i]}fs')
+            ax.set_title(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
             self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
@@ -376,7 +376,7 @@ class Process():
                     ax.set_ylabel('Energy [MeV]')
                     ax.set_ylim(min0 if YMin is None else YMin, max0 if YMax is None else YMax)
                     cbar.set_label('dndE [MeV$^{-1}$]')
-                ax.set_title(f'{axis[type]["Time"][i]}fs')
+                ax.set_title(f"{axis[type]['Time'][i]}fs")
                 fig.tight_layout()
                 self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
                 if self.Log: 
@@ -427,7 +427,7 @@ class Process():
                     })
                     dfs.append(df)
             dfs = self.pd.concat(dfs)
-            with open(self.os.path.join(self.simulation_path, f'{type.replace(' ','_')}_ang_energy.csv'), 'w') as file:
+            with open(self.os.path.join(self.simulation_path, f"{type.replace(' ','_')}_ang_energy.csv"), 'w') as file:
                 dfs.to_csv(file, index=False)
             EMax.append(x_max)
             print(f"\n{type} angle energies saved in {self.simulation_path}")
@@ -448,7 +448,7 @@ class Process():
                         ax.vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
                     ax.set_xlim(-self.np.pi/3,self.np.pi/3)
                     ax.set_ylim(0,EMax[0] if XMax is None else XMax[0])
-                    ax.set_title(f'{label[type]}')
+                    ax.set_title(f"{label[type]}")
             else:
                 fig, ax = self.plt.subplots(ncols=len(Species), num=1,clear=True, subplot_kw={'projection': 'polar'})
                 for type in Species:
@@ -463,11 +463,11 @@ class Process():
                     cbar.set_label('dNdE [1/MeV $\\mu$m$^3$]')
                     if LasAngle is not None:
                         ax[Species.index(type)].vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
-                    ax[Species.index(type)].set_title(f'{label[type]}', fontsize=16)
+                    ax[Species.index(type)].set_title(f"{label[type]}", fontsize=16)
                     ax[Species.index(type)].set_xlim(-self.np.pi/3,self.np.pi/3)
                     ax[Species.index(type)].set_ylim(0,EMax[Species.index(type)] if XMax is None else (XMax[0] if len(XMax) ==1 else XMax[Species.index(type)]))
             
-            fig.suptitle(f'{axis[type]["Time"][i]}fs')
+            fig.suptitle(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
             self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
@@ -529,7 +529,7 @@ class Process():
                     else:
                         A_arg = self.np.argwhere(abs(axis[type]['user_function0']-self.np.radians(AngleOffset))<=self.np.radians(j))
                         A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
-                        ax.plot(axis[type]["ekin"][i][1:-1], self.moving_average(A_energies, 3),  label=f'$\\theta$ $\\equal$ $\\pm${j}$\\degree$' if AngleOffset==0 else f'$\\theta$ $\\equal$ {AngleOffset} $\\pm${j}$\\degree$')
+                        ax.plot(axis[type]["ekin"][i][1:-1], self.moving_average(A_energies, 3),  label=f"$\\theta$ $\\equal$ $\\pm${j}$\\degree$" if AngleOffset==0 else f"$\\theta$ $\\equal$ {AngleOffset} $\\pm${j}$\\degree$")
                 ax.set_yscale('log')
                 ax.set_xlim(0,EMax[Species.index(type)])
                 ax.set_ylim(1e4 if YMin is None else YMin, 1e10 if YMax is None else YMax)
@@ -537,7 +537,7 @@ class Process():
                 ax.set_ylabel('dnde [1/MeV $\\mu$m$^3$]')
                 ax.grid(True)
                 ax.legend()
-                ax.set_title(f'{axis[type]["Time"][i]}fs')
+                ax.set_title(f"{axis[type]['Time'][i]}fs")
                 fig.tight_layout()
                 self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
                 if self.Log: 
@@ -581,7 +581,7 @@ class Process():
                     cbar.set_label('N [$N_c$]')
                     ax.set_xlabel(r'x [$\mu$m]')
                     ax.set_ylabel(r'y [$\mu$m]')
-                    ax.set_title(f'{axis[type]["Time"][i]}')
+                    ax.set_title(f"{axis[type]['Time'][i]}")
             
             else:
                 fig, ax = self.plt.subplots(nrows=len(Species), num=1,clear=True, sharex=True)
@@ -592,9 +592,9 @@ class Process():
                     cbar = fig.colorbar(cax, aspect=50)
                     cbar.set_label('N [$N_c$]')
                     ax[Species.index(type)].set_ylabel(r'y [$\mu$m]')
-                    ax[Species.index(type)].set_title(f'{label[type]}')
+                    ax[Species.index(type)].set_title(f"{label[type]}")
                 ax[-1].set_xlabel(r'x [$\mu$m]')
-            fig.suptitle(f'{axis[type]["Time"][i]}fs')
+            fig.suptitle(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
             self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
@@ -630,7 +630,7 @@ class Process():
         cax=ax2.pcolormesh(axis["x"],axis["Time"],den, cmap='jet', norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
         ax2.plot(CD_Surf,axis["Time"], 'k--', label=r'$\gamma$ N$_c$')
         if Trans:
-            ax2.hlines(TTrans,-1,-0.5, 'r', label=f'Trans @ {TTrans}fs')
+            ax2.hlines(TTrans,-1,-0.5, 'r', label=f"Trans @ {TTrans}fs")
         ax2.legend()
         ax1.plot(test,axis["Time"],'r-')
         ax1.spines['right'].set_visible(False)
@@ -681,7 +681,7 @@ class Process():
             for i in range(1,len(Max_Energy[type])):
                 EDerv.append((Max_Energy[type][i]-Max_Energy[type][i-1])/(axis[type]["Time"][i]-axis[type]["Time"][i-1]))
             E_derv[type] = EDerv
-            ax.plot(axis[type]['Time'], Max_Energy[type], label=f'{label[type]}')
+            ax.plot(axis[type]['Time'], Max_Energy[type], label=f"{label[type]}")
             ax.set_xlabel('t [$fs$]')
             ax.set_ylabel('E [$MeV$]')
             ax.set_xlim(left=-2*self.Tau*1e15 if tMin is None else tMin)
@@ -693,8 +693,8 @@ class Process():
             Derv_SaveFile=f"{type}_" + SaveFile + "_derv"
             fig, ax = self.plt.subplots(num=1,clear=True) 
             ax3 = ax.twinx()
-            lns2 = ax3.plot(axis[type]['Time'][1:], E_derv[type], label=f'dE/dt', color='r')
-            lns1 = ax.plot(axis[type]['Time'], Max_Energy[type], label=f'Max Energy', color='b')
+            lns2 = ax3.plot(axis[type]['Time'][1:], E_derv[type], label=f"dE/dt", color='r')
+            lns1 = ax.plot(axis[type]['Time'], Max_Energy[type], label=f"Max Energy", color='b')
             ax.set_xlabel('t [$fs$]')
             ax.set_ylabel('E [$MeV$]')
             ax3.set_ylabel('dE/dt [$MeV/fs$]')
@@ -754,7 +754,7 @@ class Process():
                 for type in Species:
                     if FSpot != 0 : args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
                     else: args=self.np.argwhere(abs(axis[type]["y"])==self.np.min(abs(axis[type]["y"])))
-                    lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), colours[Species.index(type)], label=f'{label[type]}')
+                    lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), colours[Species.index(type)], label=f"{label[type]}")
                     lnf=lns if lnf is None else lnf+lns
                 ax.hlines(1, axis[type]['x'][0], axis[type]['x'][-1], 'k')
                 ax.text(-5 if XMin is None else XMin, 1, 'Critical Density', fontsize=8)
@@ -765,9 +765,9 @@ class Process():
                     for type in E:
                         args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
                         if type == "average fields":
-                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f'{label[type]}')
+                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f"{label[type]}")
                         elif type == "instant fields":
-                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f'{label[type]}')
+                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f"{label[type]}")
                         lnf=lns if lnf is None else lnf+lns
             elif E:
                 ax.set_ylabel('E [V/m]')
@@ -776,12 +776,12 @@ class Process():
                 for type in E:
                     args=self.np.where(abs(axis[type]["y"])<=(FSpot/2))[0]
                     if type == "average fields":
-                        lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f'{label[type]}')
+                        lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f"{label[type]}")
                     elif type == "instant fields":
-                        lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f'{label[type]}')
+                        lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f"{label[type]}")
                     lnf=lns if lnf is None else lnf+lns
             ax.set_xlim(-5 if XMin is None else XMin, 5 if XMax is None else XMax)
-            ax.set_title(f'{axis[type]["Time"][i]}fs')
+            ax.set_title(f"{axis[type]['Time'][i]}fs")
             ax.set_xlabel(r'x [$\mu$m]')
             labs= [l.get_label() for l in lnf]
             ax.legend(lnf, labs)
@@ -811,7 +811,7 @@ class Process():
         for i in range(self.TimeSteps.size):
             fig, ax = self.plt.subplots(num=1,clear=True)
             ax.plot(axis[type]['ekin'][i], spect_to_plot[type][i], label='N$_c$')
-            ax.plot(axis[type]['ekin'][i], spect_to_plot[type][i]*ratio, label=f'*{ratio}')
+            ax.plot(axis[type]['ekin'][i], spect_to_plot[type][i]*ratio, label=f"*{ratio}")
             ax.set_xlabel('E [$MeV$]')
             ax.set_xlim(0,x_max)
             ax.set_ylim(1e-5, 1e1)
@@ -826,11 +826,11 @@ class Process():
             ax2.set_ylim(0.15e-5, 0.15e1)
             # ax2.set_yticks(energy_ticks)
             # print(energy_ticks)
-            # ax2.set_yticklabels([f'{tick}' for tick in energy_ticks])
+            # ax2.set_yticklabels([f"{tick}' for tick in energy_ticks])
             ax.set_ylabel('dNdE [$N_c$]')
             
             ax.legend()
-            ax.set_title(f'{axis[type]["Time"][i]}fs')
+            ax.set_title(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
             self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
