@@ -69,16 +69,15 @@ class Process():
                 print("\nPed is in seconds, converting to picoseconds")
                 Ped = Ped*self.pico
             self.t0 = self.t0 + (Ped/self.femto)
-        folder_name = "graphs"
         self.simulation_path = self.os.path.abspath(self.SimName)
-        self.folder_path = self.os.path.join(self.simulation_path, folder_name)
-        if not(self.os.path.exists(self.folder_path) and self.os.path.isdir(self.folder_path)):
-            self.os.mkdir(self.folder_path)
-        print(f"\nGraphs will be saved in {self.folder_path}")
-        self.video_path = self.os.path.join(self.simulation_path, "videos")
-        if not(self.os.path.exists(self.video_path) and self.os.path.isdir(self.video_path)):
-            self.os.mkdir(self.video_path)
-        print(f"\nVideos will be saved in {self.video_path}")
+        self.raw_path = self.os.path.join(self.simulation_path,  "Raw")
+        if not(self.os.path.exists(self.raw_path) and self.os.path.isdir(self.raw_path)):
+            self.os.mkdir(self.raw_path)
+        print(f"\nGraphs will be saved in {self.raw_path}")
+        self.pros_path = self.os.path.join(self.simulation_path, "Processed")
+        if not(self.os.path.exists(self.pros_path) and self.os.path.isdir(self.pros_path)):
+            self.os.mkdir(self.pros_path)
+        print(f"\nVideos will be saved in {self.pros_path}")
     
     def moving_average(self, x, w):
         return self.np.convolve(x, self.np.ones(w), 'valid') / w
@@ -239,13 +238,13 @@ class Process():
             else: ax.set_title(f"{E_axis['Time'][i]}fs")
             fig.tight_layout()
             if not Species: SaveFile=TempFile if File is not None else f"{Field}_" + TempFile
-            self.plt.savefig(self.folder_path + "/" + SaveFile + "_" + str(i) + ".png",dpi=200)
+            self.plt.savefig(self.raw_path + "/" + SaveFile + "_" + str(i) + ".png",dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
-        print(f"\nDensities saved in {self.folder_path}")
+        print(f"\nDensities saved in {self.raw_path}")
         if self.Movie:
-            MakeMovie(self.folder_path, self.video_path, 0, FinalFile, SaveFile)
-            print(f"\nMovies saved in {self.video_path}")
+            MakeMovie(self.raw_path, self.pros_path, 0, FinalFile, SaveFile)
+            print(f"\nMovies saved in {self.pros_path}")
             
     def SpectraPlot(self, Species=[], Min=None, Max=None, XMax=None, YMin=None, YMax=None, File=None):
         if not Species:
@@ -300,13 +299,13 @@ class Process():
             ax.legend()
             ax.set_title(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
-            self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+            self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
-        print(f"\nSpectra saved in {self.folder_path}")
+        print(f"\nSpectra saved in {self.raw_path}")
         if self.Movie:
-            MakeMovie(self.folder_path, self.video_path, 0, self.TimeSteps.size, SaveFile)
-            print(f"\nMovies saved in {self.video_path}")
+            MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
+            print(f"\nMovies saved in {self.pros_path}")
 
     def PhaseSpacePlot(self, Species=[], Phase=None, CBMin=None, CBMax=None, YMin=None, YMax=None, XMin=None, XMax=None, x_offset=None, File=None):
         if not Species:
@@ -378,13 +377,13 @@ class Process():
                     cbar.set_label('dndE [MeV$^{-1}$]')
                 ax.set_title(f"{axis[type]['Time'][i]}fs")
                 fig.tight_layout()
-                self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+                self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
                 if self.Log: 
                     PrintPercentage(i, self.TimeSteps.size -1 )
-            print(f"\nPhase spaces saved in {self.folder_path}")
+            print(f"\nPhase spaces saved in {self.raw_path}")
             if self.Movie:
-                MakeMovie(self.folder_path, self.video_path, InitialFile, self.TimeSteps.size, SaveFile)
-                print(f"\nMovies saved in {self.video_path}")
+                MakeMovie(self.raw_path, self.pros_path, InitialFile, self.TimeSteps.size, SaveFile)
+                print(f"\nMovies saved in {self.pros_path}")
     
     def AnglePlot(self, Species=[], CBMin=None, CBMax=None, XMax=None, LasAngle=None, File=None):
         if not Species:
@@ -469,13 +468,13 @@ class Process():
             
             fig.suptitle(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
-            self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+            self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
-        print(f"\nAngles saved in {self.folder_path}")
+        print(f"\nAngles saved in {self.raw_path}")
         if self.Movie:
-            MakeMovie(self.folder_path, self.video_path, InitalFile, self.TimeSteps.size, SaveFile)
-            print(f"\nMovies saved in {self.video_path}")
+            MakeMovie(self.raw_path, self.pros_path, InitalFile, self.TimeSteps.size, SaveFile)
+            print(f"\nMovies saved in {self.pros_path}")
 
     def AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None):
         if not Species:
@@ -539,13 +538,13 @@ class Process():
                 ax.legend()
                 ax.set_title(f"{axis[type]['Time'][i]}fs")
                 fig.tight_layout()
-                self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+                self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
                 if self.Log: 
                     PrintPercentage(i, self.TimeSteps.size -1 )
-            print(f"\nAngle energies saved in {self.folder_path}")
+            print(f"\nAngle energies saved in {self.raw_path}")
             if self.Movie:
-                MakeMovie(self.folder_path, self.video_path, InitialFile, self.TimeSteps.size, SaveFile)
-                print(f"\nMovies saved in {self.video_path}")
+                MakeMovie(self.raw_path, self.pros_path, InitialFile, self.TimeSteps.size, SaveFile)
+                print(f"\nMovies saved in {self.pros_path}")
             
     def HiResPlot(self, Species=[], CBMin=None, CBMax=None, x_offset=None, y_offset=None, File=None):
         if not Species:
@@ -596,13 +595,13 @@ class Process():
                 ax[-1].set_xlabel(r'x [$\mu$m]')
             fig.suptitle(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
-            self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+            self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
-        print(f"\nHi-res densities saved in {self.folder_path}")
+        print(f"\nHi-res densities saved in {self.raw_path}")
         if self.Movie:
-            MakeMovie(self.folder_path, self.video_path, 0, self.TimeSteps.size, SaveFile)
-            print(f"\nMovies saved in {self.video_path}")
+            MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
+            print(f"\nMovies saved in {self.pros_path}")
 
     def CDSurfacePlot(self, F_Spot=0, CBMin=None, CBMax=None, tMax=None, x_offset=None, File=None):
         if F_Spot == 0:
@@ -646,8 +645,8 @@ class Process():
         self.plt.subplots_adjust(wspace=0.25)
         ax2.set_title('Electron Density and\nRelativistic Critical Density')
         fig.tight_layout()
-        self.plt.savefig(self.folder_path + '/' + SaveFile + '.png',dpi=200)
-        print(f"\nCritical density surface saved in {self.folder_path}")
+        self.plt.savefig(self.pros_path + '/' + SaveFile + '.png',dpi=200)
+        print(f"\nCritical density surface saved in {self.raw_path}")
 
     def EngTimePlot(self, Species=[], tMin=None, File=None):
         if not Species:
@@ -688,7 +687,7 @@ class Process():
             ax.legend()
             ax.set_title('Max Energy')
             fig.tight_layout()
-        self.plt.savefig(self.folder_path + '/' + SaveFile + '.png',dpi=200)
+        self.plt.savefig(self.raw_path + '/' + SaveFile + '.png',dpi=200)
         for type in Species:
             Derv_SaveFile=f"{type}_" + SaveFile + "_derv"
             fig, ax = self.plt.subplots(num=1,clear=True) 
@@ -703,8 +702,8 @@ class Process():
             ax.legend(lns, labs)
             ax.set_title('Energy Derivative')
             fig.tight_layout()
-            self.plt.savefig(self.folder_path + '/' + Derv_SaveFile + '.png',dpi=200)
-        print(f"\nDensities over time saved in {self.folder_path}")
+            self.plt.savefig(self.pros_path + '/' + Derv_SaveFile + '.png',dpi=200)
+        print(f"\nDensities over time saved in {self.raw_path}")
 
     def Y0(self, Species=None, E=None, Field=None, FSpot=0, FMax=None, YMin=None, YMax=None, XMin=None, XMax=None, x_offset=None, y_offset=None, File=None):
         if Species is None and E is None:
@@ -786,13 +785,65 @@ class Process():
             labs= [l.get_label() for l in lnf]
             ax.legend(lnf, labs)
             fig.tight_layout()
-            self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+            self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
-        print(f"\nLine-outs saved in {self.folder_path}")
+        print(f"\nLine-outs saved in {self.raw_path}")
         if self.Movie:
-            MakeMovie(self.folder_path, self.video_path, 0, self.TimeSteps.size, SaveFile)
-            print(f"\nMovies saved in {self.video_path}")
+            MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
+            print(f"\nMovies saved in {self.pros_path}")
+    
+    def TempPlot(self, Species=None, Test=False, XMin=None, XMax=None, File=None):
+        if Species is None:
+            raise ValueError("No species were provided")
+        if not isinstance(Species, list):
+            Species = [Species]
+        
+        data_to_plot={}
+        axis={}
+        Tempfile=File if File is not None else "temp"
+        for type in Species:
+            Diag=type + ' spectra'
+            if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
+                raise ValueError(f"Diagnostic '{Diag}' is not a valid density diagnostic")
+            data_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units)
+
+        print(f"\nPlotting {Species} temperatures")
+        for type in Species:
+            SaveFile=f"{type}_" + Tempfile
+            for t in range(self.TimeSteps.size):
+                dnde = self.np.log(data_to_plot[type][t])
+                eng = axis[type]['ekin'][t]
+                eng = eng[dnde>-12.5]
+                dnde = dnde[dnde>-12.5]
+                eng = eng[~self.np.isnan(dnde)]
+                dnde = dnde[~self.np.isnan(dnde)]
+                eng = eng[~self.np.isinf(dnde)]
+                dnde = dnde[~self.np.isinf(dnde)]
+                try: poly = self.np.polyfit(eng,dnde, 1)
+                except TypeError: 
+                    if t == 0:
+                        Temp = self.np.nan
+                    else: Temp = self.np.vstack((Temp, self.np.nan))
+                else:
+                    exponential = self.np.poly1d(poly)
+                    if t == 0:
+                        Temp = -1/(poly[0])
+                    else: Temp = self.np.vstack((Temp, -1/(poly[0])))
+                    if Test:
+                        fig, ax = self.plt.subplots()
+                        ax.plot(axis[type]['ekin'][t], self.np.log(data_to_plot[type][t]), 'k,', label='Data')
+                        ax.plot(eng, exponential(eng), 'r-', label=f'Fit- {-1/(poly[0]):.2e} MeV')
+                        ax.set(xlabel='Energy (MeV)', ylabel='dnde', title=f'{axis[type]["Time"][t]}fs')
+                        ax.legend()
+                        fig.tight_layout()
+                        self.plt.savefig(self.raw_path + '/' + SaveFile + 'Tmp_' + str(t) + '.png',dpi=200)
+
+            fig, ax = self.plt.subplots()
+            ax.plot(axis[type]['Time'], Temp, 'k-')
+            ax.set(xlabel='Time (fs)', xlim=(axis[type]['Time'][0] if XMin == None else XMin, axis[type]['Time'][-1] if XMax == None else XMax), ylabel='Temperature (MeV)', title='Temperature')
+            fig.tight_layout()
+            self.plt.savefig(self.pros_path + '/' + SaveFile + '.png',dpi=200)
 
     def TestingPlot(self, Species=['proton'], PPC=None, Den=None, File=None):
         ratio = Den/PPC
@@ -832,6 +883,6 @@ class Process():
             ax.legend()
             ax.set_title(f"{axis[type]['Time'][i]}fs")
             fig.tight_layout()
-            self.plt.savefig(self.folder_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+            self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
