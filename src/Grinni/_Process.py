@@ -603,7 +603,7 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
 
-    def CDSurfacePlot(self, F_Spot=0, CBMin=None, CBMax=None, tMax=None, x_offset=None, File=None):
+    def CDSurfacePlot(self, F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, x_offset=None, File=None):
         if F_Spot == 0:
             raise ValueError("No focal spot was provided")
         elif F_Spot < 1:
@@ -640,7 +640,7 @@ class Process():
         cbar.set_label(r'$\gamma$N$_e$ [$N_c$]')
         ax2.set_xlabel(r'x [$\mu$m]')
         ax2.set_ylabel(r't [$fs$]')
-        ax2.set_xlim(-1.,1.)
+        ax2.set_xlim(-1. if XMin is None else XMin, 1. if XMax is None else XMax)
         ax1.set_ylim(top=50 if tMax is None else tMax)
         self.plt.subplots_adjust(wspace=0.25)
         ax2.set_title('Electron Density and\nRelativistic Critical Density')
@@ -845,6 +845,29 @@ class Process():
             fig.tight_layout()
             self.plt.savefig(self.pros_path + '/' + SaveFile + '.png',dpi=200)
 
+    def Help(self):
+        print(f"""\n
+Available functions:
+        - AnglePlot(Species=[], CBMin=None, CBMax=None, XMax=None, LasAngle=None, File=None)
+        - AngleEnergyPlot(Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None)
+        - HiResPlot(Species=[], CBMin=None, CBMax=None, x_offset=None, y_offset=None, File=None)
+        - CDSurfacePlot(F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, x_offset=None, File=None)
+        - EngTimePlot(Species=[], tMin=None, File=None)
+        - Y0(Species=None, E=None, Field=None, FSpot=0, FMax=None, YMin=None, YMax=None, XMin=None, XMax=None, x_offset=None, y_offset=None, File=None)
+        - TempPlot(Species=None, Test=False, XMin=None, XMax=None, File=None)
+        - DensityPlot(Species=[], CBMin=None, CBMax=None, XMin=None, XMax=None, File=None)
+        - SpectraPlot(Species=[], CBMin=None, CBMax=None, XMin=None, XMax=None, File=None)
+
+Current Simulation:
+        - {self.Simulation}
+        
+Saving Raw Images:
+        - {self.raw_path}
+
+Saving Processed Images:
+        - {self.pros_path}
+""")
+        
     def TestingPlot(self, Species=['proton'], PPC=None, Den=None, File=None):
         ratio = Den/PPC
         spect_to_plot={}
