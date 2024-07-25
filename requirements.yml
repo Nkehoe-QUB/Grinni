@@ -1,4 +1,4 @@
-name: smilei-analysis
+name: smilei
 channels:
   - conda-forge
   - defaults
@@ -13,3 +13,4 @@ dependencies:
   - yt
   - h5py
   - hatchling
+  - pint
