@@ -37,16 +37,17 @@ def getCDSurf(x, y, den, spot, steps):
     import matplotlib.pyplot as plt
     den_time=np.zeros((len(x), steps))
     cd_sur=[]
-    y_arg=np.where(abs(y)<=(spot/2))[0]
+    y_arg=np.argwhere(abs(y)<=(spot/2))
     for i in range(steps):
-        den_time[:,i]=np.mean(den[i][:,y_arg],axis=1)
+        den_time[:,i] = np.mean(np.squeeze(den[i][:,y_arg]), axis=1)
         try: cd_sur=np.append(cd_sur,x[np.argwhere(den_time[:,i]>=1)[0]-1])
         except IndexError: cd_sur=np.append(cd_sur,np.nan)
     return cd_sur, den_time
 
 def GoTrans(Surf, Tau, Time):
     import numpy as np
-    try: arg=np.argwhere(Surf>=1)[0][0]
+    try:
+        arg=np.argwhere(np.isnan(Surf))[0][0]
     except IndexError: return False, np.nan
     else:
         Trans=False

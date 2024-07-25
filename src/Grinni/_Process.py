@@ -603,16 +603,27 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
 
-    def CDSurfacePlot(self, F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, x_offset=None, File=None):
+    def CDSurfacePlot(self, F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, HiRes=False, x_offset=None, File=None):
         if F_Spot == 0:
             raise ValueError("No focal spot was provided")
         elif F_Spot < 1:
             F_Spot = F_Spot/self.micro
         if tMax is not None and tMax < 1:
             tMax = tMax*1e15
-        elec_den, axis = self.GetData("ParticleBinning", "electron density hi res", units=self.Units, x_offset=10 if x_offset is None else x_offset, get_new_tsteps=True)
-        en_den = self.GetData("ParticleBinning", "electron energy density hi res", Axis=False, x_offset=10 if x_offset is None else x_offset)
+        if HiRes:
+            elec_den, axis = self.GetData("ParticleBinning", "electron density hi res", units=self.Units, x_offset=10 if x_offset is None else x_offset, get_new_tsteps=True)
+            en_den = self.GetData("ParticleBinning", "electron energy density hi res", Axis=False, x_offset=10 if x_offset is None else x_offset)
+        else:
+            elec_den, axis = self.GetData("ParticleBinning", "electron density", units=self.Units, x_offset=10 if x_offset is None else x_offset)
+            en_den = self.GetData("ParticleBinning", "electron energy density", Axis=False, x_offset=10 if x_offset is None else x_offset)
         den_to_plot = self.np.array(elec_den) / ((self.np.array(en_den) / self.np.array(elec_den)) + 1)
+
+        if XMin is not None and XMin < axis['x'].min():
+            print(f"XMin is less than the minimum x value, setting XMin to {axis['x'].min()}")
+            XMin = axis['x'].min()
+        if XMax is not None and XMax > axis['x'].max():
+            print(f"XMax is greater than the maximum x value, setting XMax to {axis['x'].max()}")
+            XMax = axis['x'].max()
         CD_Surf, DenTime = getCDSurf(axis['x'], axis['y'], den_to_plot, F_Spot, self.TimeSteps.size)
         cp=(self.Tau*1e15)/(2*self.np.sqrt(2*self.np.log(2)))
         test=Gau(axis["Time"], 1.0, 0.0, cp)
@@ -626,10 +637,10 @@ class Process():
 
         print(f"\nPlotting relativistic critical density surface")
         den = self.np.swapaxes(DenTime, 0, 1)
-        cax=ax2.pcolormesh(axis["x"],axis["Time"],den, cmap='jet', norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
+        cax=ax2.pcolormesh(axis["x"],axis["Time"],den, cmap=self.cmaps.batlow_r, norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
         ax2.plot(CD_Surf,axis["Time"], 'k--', label=r'$\gamma$ N$_c$')
         if Trans:
-            ax2.hlines(TTrans,-1,-0.5, 'r', label=f"Trans @ {TTrans}fs")
+            ax2.arrow(-1. if XMin is None else XMin, TTrans, 0.5 if XMin is None else abs(XMin)/2, 0, head_width=4, head_length=0.1 if XMin is None else abs(XMin)/10, ec='r', ls='--', label=f"Trans @ {TTrans}fs")
         ax2.legend()
         ax1.plot(test,axis["Time"],'r-')
         ax1.spines['right'].set_visible(False)
@@ -851,7 +862,7 @@ Available functions:
         - AnglePlot(Species=[], CBMin=None, CBMax=None, XMax=None, LasAngle=None, File=None)
         - AngleEnergyPlot(Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None)
         - HiResPlot(Species=[], CBMin=None, CBMax=None, x_offset=None, y_offset=None, File=None)
-        - CDSurfacePlot(F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, x_offset=None, File=None)
+        - CDSurfacePlot(F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, HiRes=False, x_offset=None, File=None)
         - EngTimePlot(Species=[], tMin=None, File=None)
         - Y0(Species=None, E=None, Field=None, FSpot=0, FMax=None, YMin=None, YMax=None, XMin=None, XMax=None, x_offset=None, y_offset=None, File=None)
         - TempPlot(Species=None, Test=False, XMin=None, XMax=None, File=None)
@@ -860,7 +871,7 @@ Available functions:
 
 Current Simulation:
         - {self.Simulation}
-        
+
 Saving Raw Images:
         - {self.raw_path}
 
