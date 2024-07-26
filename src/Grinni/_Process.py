@@ -273,7 +273,7 @@ class Process():
             dfs = []
             for i in range(self.TimeSteps.size):
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
-                    x_max = self.np.max(axis[type]['ekin'][i])
+                    x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
                 df =self.pd.DataFrame({
                     'Time':axis[type]['Time'][i],
                     'Energy':axis[type]['ekin'][i],
@@ -415,8 +415,6 @@ class Process():
             dfs = []
             for i in range(self.TimeSteps.size):
                 for j in range(len(axis[type]['user_function0'])):
-                    axis[type]['ekin'][i] = MovingAverage(axis[type]['ekin'][i], 3)
-                    angle_to_plot[type][i][j] = MovingAverage(angle_to_plot[type][i][j], 3)
                     df = self.pd.DataFrame({
                         'Time': axis[type]['Time'][i],
                         'Angles': axis[type]['user_function0'][j],
@@ -425,7 +423,7 @@ class Process():
                     })
                     dfs.append(df)
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
-                    x_max = self.np.max(axis[type]['ekin'][i])
+                    x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
             dfs = self.pd.concat(dfs)
             with open(self.os.path.join(self.simulation_path, f"{type.replace(' ','_')}_ang_energy.csv"), 'w') as file:
                 dfs.to_csv(file, index=False)
@@ -502,11 +500,8 @@ class Process():
         for type in Species:
             x_max=0
             for i in range(self.TimeSteps.size):
-                for j in range(len(axis[type]['user_function0'])):
-                    axis[type]['ekin'][i] = MovingAverage(axis[type]['ekin'][i], 3)
-                    angle_to_plot[type][i][j] = MovingAverage(angle_to_plot[type][i][j], 3)
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
-                    x_max = self.np.max(axis[type]['ekin'][i])
+                    x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
             EMax.append(x_max)
         for type in Species:
             print(f"\nPlotting {type} angle energies")
