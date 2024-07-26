@@ -149,9 +149,11 @@ class Process():
                     Z=1
                 elif "electron" in Name:
                     Z=1
-                axis_data = MovingAverage(self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z),3)
+                axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z)
                 for t in self.TimeSteps[1:]:
-                    axis_data=self.np.vstack((axis_data, MovingAverage(self.np.array(MetaData.getAxis('ekin', timestep=t)/Z),3)))
+                    axis_data=self.np.vstack((axis_data, self.np.array(MetaData.getAxis('ekin', timestep=t)/Z)))
+                for i in range(Values.shape[0]):
+                    Values[i] = MovingAverage(Values[i], 3)
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
@@ -272,7 +274,7 @@ class Process():
         for type in Species:
             dfs = []
             for i in range(self.TimeSteps.size):
-                if self.np.max(axis[type]['ekin'][i]) > x_max:
+                if self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])]) > x_max:
                     x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
                 df =self.pd.DataFrame({
                     'Time':axis[type]['Time'][i],
@@ -285,6 +287,7 @@ class Process():
                 dfs.to_csv(file, index=False)
 
             print(f"\n{type} energies saved in {self.simulation_path}")
+        print(x_max)
         for i in range(self.TimeSteps.size):
             fig, ax = self.plt.subplots(num=1,clear=True)
             for type in Species:
