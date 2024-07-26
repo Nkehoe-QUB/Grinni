@@ -149,9 +149,9 @@ class Process():
                     Z=1
                 elif "electron" in Name:
                     Z=1
-                axis_data = MovingAverage(self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z),3)
+                axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z)
                 for t in self.TimeSteps[1:]:
-                    axis_data=self.np.vstack((axis_data, MovingAverage(self.np.array(MetaData.getAxis('ekin', timestep=t)/Z),3)))
+                    axis_data=self.np.vstack((axis_data, MetaData.getAxis('ekin', timestep=t)/Z))
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
@@ -272,6 +272,8 @@ class Process():
         for type in Species:
             dfs = []
             for i in range(self.TimeSteps.size):
+                axis[type]['ekin'][i] = MovingAverage(axis[type]['ekin'][i], 3)
+                spect_to_plot[type][i] = MovingAverage(spect_to_plot[type][i], 3)
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
                     x_max = self.np.max(axis[type]['ekin'][i])
                 df =self.pd.DataFrame({
@@ -414,10 +416,9 @@ class Process():
             x_max=0
             dfs = []
             for i in range(self.TimeSteps.size):
-                if self.np.max(axis[type]['ekin'][i]) > x_max:
-                    x_max = self.np.max(axis[type]['ekin'][i])
-
                 for j in range(len(axis[type]['user_function0'])):
+                    axis[type]['ekin'][i] = MovingAverage(axis[type]['ekin'][i], 3)
+                    angle_to_plot[type][i][j] = MovingAverage(angle_to_plot[type][i][j], 3)
                     df = self.pd.DataFrame({
                         'Time': axis[type]['Time'][i],
                         'Angles': axis[type]['user_function0'][j],
@@ -425,6 +426,8 @@ class Process():
                         'dNdE': angle_to_plot[type][i][j]
                     })
                     dfs.append(df)
+                if self.np.max(axis[type]['ekin'][i]) > x_max:
+                    x_max = self.np.max(axis[type]['ekin'][i])
             dfs = self.pd.concat(dfs)
             with open(self.os.path.join(self.simulation_path, f"{type.replace(' ','_')}_ang_energy.csv"), 'w') as file:
                 dfs.to_csv(file, index=False)
@@ -501,8 +504,11 @@ class Process():
         for type in Species:
             x_max=0
             for i in range(self.TimeSteps.size):
-                    if self.np.max(axis[type]['ekin'][i]) > x_max:
-                        x_max = self.np.max(axis[type]['ekin'][i])
+                for j in range(len(axis[type]['user_function0'])):
+                    axis[type]['ekin'][i] = MovingAverage(axis[type]['ekin'][i], 3)
+                    angle_to_plot[type][i][j] = MovingAverage(angle_to_plot[type][i][j], 3)
+                if self.np.max(axis[type]['ekin'][i]) > x_max:
+                    x_max = self.np.max(axis[type]['ekin'][i])
             EMax.append(x_max)
         for type in Species:
             print(f"\nPlotting {type} angle energies")
