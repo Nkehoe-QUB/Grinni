@@ -274,6 +274,7 @@ class Process():
             for i in range(self.TimeSteps.size):
                 axis[type]['ekin'][i] = MovingAverage(axis[type]['ekin'][i], 3)
                 spect_to_plot[type][i] = MovingAverage(spect_to_plot[type][i], 3)
+                print(len(axis[type]['ekin'][i]), len(spect_to_plot[type][i]))
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
                     x_max = self.np.max(axis[type]['ekin'][i])
                 df =self.pd.DataFrame({
