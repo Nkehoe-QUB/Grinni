@@ -91,4 +91,6 @@ def MovingAverage(x, n):
     import numpy as np
     for i in range(n):
         x = np.convolve(x, np.ones(3), 'valid') / 3
+    tmp = np.full(n, np.nan)
+    x = np.concatenate((tmp, x, tmp))
     return x
