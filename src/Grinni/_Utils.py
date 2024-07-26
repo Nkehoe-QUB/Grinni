@@ -86,3 +86,9 @@ def MakeMovie(GraphFolder, OutputFolder, initialfile, finalfile, quantity):
         else:
              print(filename + 'image does not exist')
     video.release()
+
+def MovingAverage(x, n):
+    import numpy as np
+    for i in range(n):
+        x = np.convolve(x, np.ones(3), 'valid') / 3
+    return x

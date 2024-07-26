@@ -1,4 +1,4 @@
-from ._Utils import Gau, getFWHM, getCDSurf, GoTrans, PrintPercentage, MakeMovie
+from ._Utils import Gau, getFWHM, getCDSurf, GoTrans, PrintPercentage, MakeMovie, MovingAverage
 
 class Process():
     def __init__(self, SimName=".", x_spot=0, Tau=0, Ped=None, Dim=2, Log=True, Movie=True):
@@ -152,6 +152,7 @@ class Process():
                 axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z)
                 for t in self.TimeSteps[1:]:
                     axis_data=self.np.vstack((axis_data, MetaData.getAxis('ekin', timestep=t)/Z))
+                axis_data = MovingAverage(axis_data, 3)
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
