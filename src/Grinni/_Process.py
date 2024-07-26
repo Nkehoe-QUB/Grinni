@@ -149,9 +149,9 @@ class Process():
                     Z=1
                 elif "electron" in Name:
                     Z=1
-                axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z)
+                axis_data = MovingAverage(self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z),3)
                 for t in self.TimeSteps[1:]:
-                    axis_data=self.np.vstack((axis_data, MetaData.getAxis('ekin', timestep=t)/Z))
+                    axis_data=self.np.vstack((axis_data, MovingAverage(self.np.array(MetaData.getAxis('ekin', timestep=t)/Z),3)))
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
@@ -272,9 +272,6 @@ class Process():
         for type in Species:
             dfs = []
             for i in range(self.TimeSteps.size):
-                axis[type]['ekin'][i] = MovingAverage(axis[type]['ekin'][i], 3)
-                spect_to_plot[type][i] = MovingAverage(spect_to_plot[type][i], 3)
-                print(len(axis[type]['ekin'][i]), len(spect_to_plot[type][i]))
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
                     x_max = self.np.max(axis[type]['ekin'][i])
                 df =self.pd.DataFrame({
