@@ -101,7 +101,7 @@ class Process():
     def moving_average(self, x, w):
         return self.np.convolve(x, self.np.ones(w), 'valid') / w
 
-    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True):
+    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None):
         # Check if Diag is a valid diagnostic
         if not self.Simulation.getDiags(Diag):
             raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
@@ -880,15 +880,29 @@ class Process():
     def Help(self):
         print(f"""\n
 Available functions:
+        - _init__(SimName=".", x_spot=0, Tau=0, Ped=None, Dim=2, Log=True, Movie=True)
+              
         - AnglePlot(Species=[], CBMin=None, CBMax=None, XMax=None, LasAngle=None, File=None)
+              
         - AngleEnergyPlot(Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None)
-        - HiResPlot(Species=[], CBMin=None, CBMax=None, File=None)
-        - CDSurfacePlot(F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, HiRes=False File=None)
+              
+        - CDSurfacePlot(F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, HiRes=False, File=None)
+              
+        - DensityPlot(Species=[], E_las=False, E_avg=False, Field=None, EMax=None, Colours=None, CBMin=None, CBMax=None, File=None)
+              
         - EngTimePlot(Species=[], tMin=None, File=None)
-        - Y0(Species=None, E=None, Field=None, FSpot=0, FMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None)
+              
+        - GetData(Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None)
+
+        - HiResPlot(Species=[], CBMin=None, CBMax=None, File=None)
+
+        - PhaseSpacePlot(Species=[], Phase=None, CBMin=None, CBMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None)
+              
+        - SpectraPlot(Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True)
+              
         - TempPlot(Species=None, Test=False, XMin=None, XMax=None, File=None)
-        - DensityPlot(Species=[], CBMin=None, CBMax=None, XMin=None, XMax=None, File=None)
-        - SpectraPlot(Species=[], CBMin=None, CBMax=None, XMin=None, XMax=None, File=None)
+              
+        - Y0(Species=None, E=None, Field=None, FSpot=0, FMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None)
 
 Current Simulation:
         - {self.Simulation}
