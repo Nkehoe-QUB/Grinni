@@ -171,8 +171,6 @@ class Process():
                     axis_data=self.np.vstack((axis_data, self.np.array(MetaData.getAxis('ekin', timestep=t)/Z)))
                 if ProsData:
                     Values = Values * (self.box_x * self.box_y)
-                    for i in range(Values.shape[0]):
-                        Values[i] = MovingAverage(Values[i], 3)
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
@@ -293,6 +291,8 @@ class Process():
         for type in Species:
             dfs = []
             for i in range(self.TimeSteps.size):
+                if ProsData:
+                    spect_to_plot[type][i] = MovingAverage(spect_to_plot[type][i], 3)
                 if self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])]) > x_max:
                     x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
                 df =self.pd.DataFrame({
