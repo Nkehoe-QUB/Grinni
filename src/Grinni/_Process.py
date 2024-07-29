@@ -67,6 +67,7 @@ class Process():
                 if ymatch:
                     self.box_y = float(ymatch.group(1))
                     break
+        print(f"\nBox size is {self.box_x}x{self.box_y} micrometers")
         self.Simulation = self.happi.Open(self.SimName, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"Simulation {self.SimName} does not exist")
