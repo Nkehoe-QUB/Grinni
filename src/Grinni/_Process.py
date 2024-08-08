@@ -316,7 +316,7 @@ class Process():
             ax.set_xlabel('E [$MeV$]')
             ax.set_xlim(0,x_max if XMax is None else XMax)
             ax.set_ylim(1e4 if YMin is None else YMin,1e11 if YMax is None else YMax)
-            ax.set_ylabel('dNdE [1/MeV$]' if ProsData else 'dNdE [1/MeV $\\mu$m$^3$]')
+            ax.set_ylabel('dNdE [1/MeV]' if ProsData else 'dNdE [1/MeV $\\mu$m$^3$]')
             ax.set_yscale('log')
             ax.grid(True)
             ax.legend()
@@ -715,12 +715,13 @@ class Process():
             E_derv[type] = EDerv
             ax.plot(axis[type]['Time'], Max_Energy[type], label=f"{label[type]}")
             ax.set_xlabel('t [$fs$]')
-            ax.set_ylabel('E [$MeV$]')
+            ax.set_ylabel('E [$MeV/u$]')
             ax.set_xlim(left=-2*self.Tau*1e15 if tMin is None else tMin)
             ax.legend()
+            ax.grid()
             ax.set_title('Max Energy')
             fig.tight_layout()
-        self.plt.savefig(self.raw_path + '/' + SaveFile + '.png',dpi=200)
+        self.plt.savefig(self.pros_path + '/' + SaveFile + '.png',dpi=200)
         for type in Species:
             Derv_SaveFile=f"{type}_" + SaveFile + "_derv"
             fig, ax = self.plt.subplots(num=1,clear=True) 
