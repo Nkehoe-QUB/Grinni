@@ -482,6 +482,8 @@ class Process():
                     ax.set_xlim(-self.np.pi/3 if YMin is None else YMin,self.np.pi/3 if YMax is None else YMax)
                     ax.set_ylim(0,EMax[0] if XMax is None else XMax[0])
                     ax.set_title(f"{label[type]}")
+                    if YMax is not None and YMax > self.np.pi/2:
+                        ax.set_rlabel_position(90)
             else:
                 fig, ax = self.plt.subplots(ncols=len(Species), num=1,clear=True, subplot_kw={'projection': 'polar'})
                 for type in Species:
@@ -497,7 +499,7 @@ class Process():
                     if LasAngle is not None:
                         ax[Species.index(type)].vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
                     ax[Species.index(type)].set_title(f"{label[type]}", fontsize=16)
-                    ax[Species.index(type)].set_xlim(-self.np.pi/3,self.np.pi/3)
+                    ax[Species.index(type)].set_xlim(-self.np.pi/3 if YMin is None else YMin,self.np.pi/3 if YMax is None else YMax)
                     ax[Species.index(type)].set_ylim(0,EMax[Species.index(type)] if XMax is None else (XMax[0] if len(XMax) ==1 else XMax[Species.index(type)]))
             
             fig.suptitle(f"{axis[type]['Time'][i]}fs")
