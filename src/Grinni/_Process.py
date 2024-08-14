@@ -408,7 +408,7 @@ class Process():
                 MakeMovie(self.raw_path, self.pros_path, InitialFile, self.TimeSteps.size, SaveFile)
                 print(f"\nMovies saved in {self.pros_path}")
     
-    def AnglePlot(self, Species=[], CBMin=None, CBMax=None, XMax=None, LasAngle=None, File=None):
+    def AnglePlot(self, Species=[], CBMin=None, CBMax=None, XMax=None, YMin=None, YMax=None, LasAngle=None, File=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -419,6 +419,18 @@ class Process():
         if XMax is not None:
             if len(XMax) < len(Species) and len(XMax) != 1:
                 raise ValueError("XMax must be a list of the same length as Species or a single value")
+        if YMin is not None and YMin < -self.np.pi:
+            YMin = self.np.radians(YMin)
+        if YMax is not None and YMax > self.np.pi:
+            YMax = self.np.radians(YMax)
+        if YMin is None:
+            if YMax is not None:
+                YMin = -YMax
+        else:
+            if YMax is None:
+                if YMin > 0:
+                    YMin = -YMin
+                YMax = -YMin
         angle_to_plot={}
         axis={}
         label={}
@@ -467,7 +479,7 @@ class Process():
                     cbar.set_label('dNdE [1/MeV $\\mu$m$^3$]')
                     if LasAngle is not None:
                         ax.vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
-                    ax.set_xlim(-self.np.pi/3,self.np.pi/3)
+                    ax.set_xlim(-self.np.pi/3 if YMin is None else YMin,self.np.pi/3 if YMax is None else YMax)
                     ax.set_ylim(0,EMax[0] if XMax is None else XMax[0])
                     ax.set_title(f"{label[type]}")
             else:
