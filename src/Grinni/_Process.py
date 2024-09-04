@@ -512,7 +512,7 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, InitalFile, self.TimeSteps.size, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
 
-    def AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None):
+    def AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -537,50 +537,68 @@ class Process():
         for type in Species:
             x_max=0
             for i in range(self.TimeSteps.size):
+                if ProsData:
+                    angle_to_plot[type][i] = MovingAverage(angle_to_plot[type][i], 3)
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
                     x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
             EMax.append(x_max)
         for type in Species:
-            print(f"\nPlotting {type} angle energies")
-            for i in range(self.TimeSteps.size):
-                fig, ax = self.plt.subplots(num=1,clear=True)
-                SaveFile= TempFile + f"_{type}" 
-                if self.np.max(axis[type]['ekin'][i]) <= EMax[Species.index(type)]/10:
-                    InitialFile=i+1
-                    continue
-                Eng_Den = self.np.swapaxes(angle_to_plot[type][i], 0, 1)
+            if DataOnly:
+                if len(Species) > 1 or len(Angles) > 1:
+                    raise ValueError("DataOnly is only available for a single species and angle")
                 for j in (Angles):
                     if j=='FWHM':
                         FWHM_rad, FWHM_deg = getFWHM(axis[type]['user_function0'], angle_to_plot[type][i], axis[type]["ekin"][i])
-                        A2_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/2)
-                        A4_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/4)
-                        A2_energies = self.np.sum(Eng_Den[:,A2_arg],axis=1)
-                        A4_energies = self.np.sum(Eng_Den[:,A4_arg],axis=1)
-                        ax.plot(axis[type]["ekin"][i],A4_energies,label=fr'$\theta$ $\equal$ $\pm${FWHM_deg/4}$\degree$')
-                        ax.plot(axis[type]["ekin"][i],A2_energies, label=fr'$\theta$ $\equal$ $\pm${FWHM_deg/2}$\degree$')
+                        A_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/2)
+                        A_energies = self.np.sum(Eng_Den[:,A2_arg],axis=1)
                     elif j == 0:
-                        A0_arg = self.np.argwhere(axis[type]['user_function0']-self.np.radians(AngleOffset)==abs(axis[type]['user_function0']-self.np.radians(AngleOffset)).min())[0]
-                        ax.plot(axis[type]["ekin"][i],Eng_Den[:,A0_arg], label=r'$\theta$ $\equal$ 0$\degree$')
+                        A_arg = self.np.argwhere(axis[type]['user_function0']-self.np.radians(AngleOffset)==abs(axis[type]['user_function0']-self.np.radians(AngleOffset)).min())[0]
+                        A_energies = Eng_Den[:,A0_arg]
                     else:
                         A_arg = self.np.argwhere(abs(axis[type]['user_function0']-self.np.radians(AngleOffset))<=self.np.radians(j))
                         A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
-                        ax.plot(axis[type]["ekin"][i][1:-1], self.moving_average(A_energies, 3),  label=f"$\\theta$ $\\equal$ $\\pm${j}$\\degree$" if AngleOffset==0 else f"$\\theta$ $\\equal$ {AngleOffset} $\\pm${j}$\\degree$")
-                ax.set_yscale('log')
-                ax.set_xlim(0,EMax[Species.index(type)])
-                ax.set_ylim(1e4 if YMin is None else YMin, 1e10 if YMax is None else YMax)
-                ax.set_xlabel('Energy [MeV/u]')
-                ax.set_ylabel('dnde [1/MeV $\\mu$m$^3$]')
-                ax.grid(True)
-                ax.legend()
-                ax.set_title(f"{axis[type]['Time'][i]}fs")
-                fig.tight_layout()
-                self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
-                if self.Log: 
-                    PrintPercentage(i, self.TimeSteps.size -1 )
-            print(f"\nAngle energies saved in {self.raw_path}")
-            if self.Movie:
-                MakeMovie(self.raw_path, self.pros_path, InitialFile, self.TimeSteps.size, SaveFile)
-                print(f"\nMovies saved in {self.pros_path}")
+                    return axis[type]["ekin"][i], A_energies
+            elif not DataOnly:
+                print(f"\nPlotting {type} angle energies")
+                for i in range(self.TimeSteps.size):
+                    fig, ax = self.plt.subplots(num=1,clear=True)
+                    SaveFile= TempFile + f"_{type}" 
+                    if self.np.max(axis[type]['ekin'][i]) <= EMax[Species.index(type)]/10:
+                        InitialFile=i+1
+                        continue
+                    Eng_Den = self.np.swapaxes(angle_to_plot[type][i], 0, 1)
+                    for j in (Angles):
+                        if j=='FWHM':
+                            FWHM_rad, FWHM_deg = getFWHM(axis[type]['user_function0'], angle_to_plot[type][i], axis[type]["ekin"][i])
+                            A2_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/2)
+                            A4_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/4)
+                            A2_energies = self.np.sum(Eng_Den[:,A2_arg],axis=1)
+                            A4_energies = self.np.sum(Eng_Den[:,A4_arg],axis=1)
+                            ax.plot(axis[type]["ekin"][i],A4_energies,label=fr'$\theta$ $\equal$ $\pm${FWHM_deg/4}$\degree$')
+                            ax.plot(axis[type]["ekin"][i],A2_energies, label=fr'$\theta$ $\equal$ $\pm${FWHM_deg/2}$\degree$')
+                        elif j == 0:
+                            A0_arg = self.np.argwhere(axis[type]['user_function0']-self.np.radians(AngleOffset)==abs(axis[type]['user_function0']-self.np.radians(AngleOffset)).min())[0]
+                            ax.plot(axis[type]["ekin"][i],Eng_Den[:,A0_arg], label=r'$\theta$ $\equal$ 0$\degree$')
+                        else:
+                            A_arg = self.np.argwhere(abs(axis[type]['user_function0']-self.np.radians(AngleOffset))<=self.np.radians(j))
+                            A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
+                            ax.plot(axis[type]["ekin"][i][1:-1], A_energies, label=f"$\\theta$ $\\equal$ $\\pm${j}$\\degree$" if AngleOffset==0 else f"$\\theta$ $\\equal$ {AngleOffset} $\\pm${j}$\\degree$")
+                    ax.set_yscale('log')
+                    ax.set_xlim(0,EMax[Species.index(type)])
+                    ax.set_ylim(1e4 if YMin is None else YMin, 1e10 if YMax is None else YMax)
+                    ax.set_xlabel('Energy [MeV/u]')
+                    ax.set_ylabel('dnde [1/MeV $\\mu$m$^3$]')
+                    ax.grid(True)
+                    ax.legend()
+                    ax.set_title(f"{axis[type]['Time'][i]}fs")
+                    fig.tight_layout()
+                    self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
+                    if self.Log: 
+                        PrintPercentage(i, self.TimeSteps.size -1 )
+                print(f"\nAngle energies saved in {self.raw_path}")
+                if self.Movie:
+                    MakeMovie(self.raw_path, self.pros_path, InitialFile, self.TimeSteps.size, SaveFile)
+                    print(f"\nMovies saved in {self.pros_path}")
             
     def HiResPlot(self, Species=[], CBMin=None, CBMax=None, File=None):
         if not Species:
