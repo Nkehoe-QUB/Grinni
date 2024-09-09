@@ -538,7 +538,8 @@ class Process():
             x_max=0
             for i in range(self.TimeSteps.size):
                 if ProsData:
-                    angle_to_plot[type][i] = MovingAverage(angle_to_plot[type][i], 3)
+                    for j in range(len(axis[type]['user_function0'])):
+                        angle_to_plot[type][i][j] = MovingAverage(angle_to_plot[type][i][j], 3)
                 if self.np.max(axis[type]['ekin'][i]) > x_max:
                     x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
             EMax.append(x_max)
@@ -546,18 +547,24 @@ class Process():
             if DataOnly:
                 if len(Species) > 1 or len(Angles) > 1:
                     raise ValueError("DataOnly is only available for a single species and angle")
-                for j in (Angles):
-                    if j=='FWHM':
-                        FWHM_rad, FWHM_deg = getFWHM(axis[type]['user_function0'], angle_to_plot[type][i], axis[type]["ekin"][i])
-                        A_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/2)
-                        A_energies = self.np.sum(Eng_Den[:,A2_arg],axis=1)
-                    elif j == 0:
-                        A_arg = self.np.argwhere(axis[type]['user_function0']-self.np.radians(AngleOffset)==abs(axis[type]['user_function0']-self.np.radians(AngleOffset)).min())[0]
-                        A_energies = Eng_Den[:,A0_arg]
-                    else:
-                        A_arg = self.np.argwhere(abs(axis[type]['user_function0']-self.np.radians(AngleOffset))<=self.np.radians(j))
-                        A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
-                    return axis[type]["ekin"][i], A_energies
+                AxisOut = {}
+                Data_out = {}
+                for i in range(self.TimeSteps.size):
+                    Eng_Den = self.np.swapaxes(angle_to_plot[type][i], 0, 1)
+                    for j in (Angles):
+                        if j=='FWHM':
+                            FWHM_rad, FWHM_deg = getFWHM(axis[type]['user_function0'], angle_to_plot[type][i], axis[type]["ekin"][i])
+                            A_arg = self.np.argwhere(abs(axis[type]['user_function0'])<=FWHM_rad/2)
+                            A_energies = self.np.sum(Eng_Den[:,A2_arg],axis=1)
+                        elif j == 0:
+                            A_arg = self.np.argwhere(axis[type]['user_function0']-self.np.radians(AngleOffset)==abs(axis[type]['user_function0']-self.np.radians(AngleOffset)).min())[0]
+                            A_energies = Eng_Den[:,A0_arg]
+                        else:
+                            A_arg = self.np.argwhere(abs(axis[type]['user_function0']-self.np.radians(AngleOffset))<=self.np.radians(j))
+                            A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
+                        AxisOut[i] = axis[type]["ekin"][i]
+                        Data_out[i] = A_energies
+                return AxisOut, Data_out
             elif not DataOnly:
                 print(f"\nPlotting {type} angle energies")
                 for i in range(self.TimeSteps.size):
@@ -582,7 +589,7 @@ class Process():
                         else:
                             A_arg = self.np.argwhere(abs(axis[type]['user_function0']-self.np.radians(AngleOffset))<=self.np.radians(j))
                             A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
-                            ax.plot(axis[type]["ekin"][i][1:-1], A_energies, label=f"$\\theta$ $\\equal$ $\\pm${j}$\\degree$" if AngleOffset==0 else f"$\\theta$ $\\equal$ {AngleOffset} $\\pm${j}$\\degree$")
+                            ax.plot(axis[type]["ekin"][i], A_energies, label=f"$\\theta$ $\\equal$ $\\pm${j}$\\degree$" if AngleOffset==0 else f"$\\theta$ $\\equal$ {AngleOffset} $\\pm${j}$\\degree$")
                     ax.set_yscale('log')
                     ax.set_xlim(0,EMax[Species.index(type)])
                     ax.set_ylim(1e4 if YMin is None else YMin, 1e10 if YMax is None else YMax)
