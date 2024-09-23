@@ -273,6 +273,7 @@ class Process():
                         SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                         ax.plot(axis[type]['x'], den_to_plot[type][i], label=f"{type}")
                     ax.set_ylim(1e-1 if CBMin is None else CBMin, self.np.max(den_to_plot[type]) if CBMax is None else CBMax)
+                    ax.set_xlim(self.np.min(axis[type]['x']), self.np.max(axis[type]['x']))
                     ax.set_yscale('log')
                     ax.set_ylabel('N [$N_c$]')
             if Species: ax.set_title(f"{axis[type]['Time'][i]}fs")
