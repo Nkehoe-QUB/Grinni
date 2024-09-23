@@ -52,22 +52,25 @@ class Process():
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'um^-3*kg^-1*(m/s)^-1', 'T']
         file_path = f'{self.SimName}/smilei.py'
-        self.box_x = None
-        self.box_y = None
+        self.area = None
+        areaText=''
         with open(file_path, 'r') as file:
             for line in file:
                 xmatch = re.search(r'box_x\s*=\s*(\d+).\s*\*\s*micro', line)
                 if xmatch is None: re.search(r'box_x\s*=\s*(\d+)\s*\*\s*micro', line)
                 if xmatch:
-                    self.box_x = float(xmatch.group(1))
+                    self.area = float(xmatch.group(1))
+                    areaText = str(xmatch.group(1))
                     break
-            for line in file:
-                ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
-                if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
-                if ymatch:
-                    self.box_y = float(ymatch.group(1))
-                    break
-        print(f"\nBox size is {self.box_x}x{self.box_y} micrometers")
+            if Dim>1:
+                for line in file:
+                    ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
+                    if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
+                    if ymatch:
+                        self.area = self.area * float(ymatch.group(1))
+                        areaText = areaText + 'x' + str(ymatch.group(1))
+                        break
+        print(f"\nBox size is {areaText} micrometers")
         self.Simulation = self.happi.Open(self.SimName, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"Simulation {self.SimName} does not exist")
@@ -124,10 +127,11 @@ class Process():
                 MetaData = self.Simulation.ParticleBinning(Name)
             elif units is not None:
                 MetaData = self.Simulation.ParticleBinning(Name, units=units)
+            axis_names=['x', 'ekin', 'px']
             if self.Dim == 2:
-                axis_names=['x', 'y', 'user_function0', 'ekin', 'px', 'py']
+                axis_names.append('y', 'user_function0', 'py')
             elif self.Dim == 3:
-                axis_names=['x', 'y', 'z', 'user_function0', 'ekin', 'px', 'py']
+                axis_names.append('z')
             
         elif Diag == "Fields":
             if units is None:
@@ -171,7 +175,7 @@ class Process():
                 for t in self.TimeSteps[1:]:
                     axis_data=self.np.vstack((axis_data, self.np.array(MetaData.getAxis('ekin', timestep=t)/Z)))
                 if ProsData:
-                    Values = Values * (self.box_x * self.box_y)
+                    Values = Values * (self.area)
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
@@ -230,32 +234,51 @@ class Process():
         FinalFile = self.TimeSteps.size
         for i in range(self.TimeSteps.size):
             fig, ax = self.plt.subplots(num=1,clear=True)
-            if E_las or E_avg:
-                try: field = self.np.swapaxes(Ey[i], 0, 1)
-                except IndexError: 
-                    FinalFile = i
-                    continue
-                else:
-                    FUnit = 'V/m' if 'E' in Field else 'T'
-                    cax1=ax.pcolormesh(E_axis['x'], E_axis['y'], field, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
-                    cbar1 = fig.colorbar(cax1, aspect=50)
-                    cbar1.set_label(f"{Field} [{FUnit}]")
-            if Species:
-                for type in Species:
-                    SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                    den = self.np.swapaxes(den_to_plot[type][i], 0, 1)
-                    cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den, cmap=self.cmaps.batlow_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
-                    if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg):
+            if self.Dim > 1:
+                if E_las or E_avg:
+                    try: field = self.np.swapaxes(Ey[i], 0, 1)
+                    except IndexError: 
+                        FinalFile = i
+                        continue
+                    else:
+                        FUnit = 'V/m' if 'E' in Field else 'T'
+                        cax1=ax.pcolormesh(E_axis['x'], E_axis['y'], field, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
+                        cbar1 = fig.colorbar(cax1, aspect=50)
+                        cbar1.set_label(f"{Field} [{FUnit}]")
+                if Species:
+                    for type in Species:
+                        SaveFile=TempFile if File is not None else f"{type}_" + TempFile
+                        den = self.np.swapaxes(den_to_plot[type][i], 0, 1)
+                        cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den, cmap=self.cmaps.batlow_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
+                        if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg):
+                            cbar=fig.colorbar(cax, aspect=50)
+                            cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
+                    if (Colours is None) or (len(Colours) == 1):
                         cbar=fig.colorbar(cax, aspect=50)
-                        cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
-                if (Colours is None) or (len(Colours) == 1):
-                    cbar=fig.colorbar(cax, aspect=50)
-                    cbar.set_label('N [$N_c$]')
-            ax.grid(True)
-            ax.set_xlabel(r'x [$\mu$m]')
-            ax.set_ylabel(r'y [$\mu$m]')
+                        cbar.set_label('N [$N_c$]')
+                ax.set_ylabel(r'y [$\mu$m]')
+            elif self.Dim == 1:
+                if E_las or E_avg:
+                    try: tmp = Ey[i]
+                    except IndexError: 
+                        FinalFile = i
+                        continue
+                    else:
+                        FUnit = 'V/m' if 'E' in Field else 'T'
+                        ax.Plot(E_axis['x'], Ey[i], label=Field)
+                        ax.set_ylim(-self.max_number if EMax is None else -EMax, self.max_number if EMax is None else EMax)
+                        ax.set_ylabel(f"{Field} [{FUnit}]")
+                if Species:
+                    for type in Species:
+                        SaveFile=TempFile if File is not None else f"{type}_" + TempFile
+                        ax.plot(axis[type]['x'], den_to_plot[type][i], label=f"{type}")
+                    ax.set_ylim(1e-1 if CBMin is None else CBMin, self.np.max(den_to_plot[type]) if CBMax is None else CBMax)
+                    ax.set_yscale('log')
+                    ax.set_ylabel('N [$N_c$]')
             if Species: ax.set_title(f"{axis[type]['Time'][i]}fs")
             else: ax.set_title(f"{E_axis['Time'][i]}fs")
+            ax.grid(True)
+            ax.set_xlabel(r'x [$\mu$m]')
             fig.tight_layout()
             if not Species: SaveFile=TempFile if File is not None else f"{Field}_" + TempFile
             self.plt.savefig(self.raw_path + "/" + SaveFile + "_" + str(i) + ".png",dpi=200)
