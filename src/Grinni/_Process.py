@@ -265,7 +265,7 @@ class Process():
                         continue
                     else:
                         FUnit = 'V/m' if 'E' in Field else 'T'
-                        ax.Plot(E_axis['x'], Ey[i], label=Field)
+                        ax.plot(E_axis['x'], Ey[i], label=Field)
                         ax.set_ylim(-self.max_number if EMax is None else -EMax, self.max_number if EMax is None else EMax)
                         ax.set_ylabel(f"{Field} [{FUnit}]")
                 if Species:
@@ -848,9 +848,12 @@ class Process():
                 ax.set_yscale('log')
                 ax.set_ylim(1e-2 if YMin is None else YMin, 1e3 if YMax is None else YMax)
                 for type in Species:
-                    if FSpot != 0 : args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
-                    else: args=self.np.argwhere(abs(axis[type]["y"])==self.np.min(abs(axis[type]["y"])))
-                    lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), colours[Species.index(type)], label=f"{label[type]}")
+                    if self.Dim == 2:
+                        if FSpot != 0 : args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
+                        else: args=self.np.argwhere(abs(axis[type]["y"])==self.np.min(abs(axis[type]["y"])))
+                        lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), colours[Species.index(type)], label=f"{label[type]}")
+                    elif self.Dim==1:
+                        lns=ax.plot(axis[type]['x'], data_to_plot[type][i][:], colours[Species.index(type)], label=f"{label[type]}")
                     lnf=lns if lnf is None else lnf+lns
                 ax.hlines(1, axis[type]['x'][0], axis[type]['x'][-1], 'k')
                 ax.text(-5 if XMin is None else XMin, 1, 'Critical Density', fontsize=8)
@@ -859,11 +862,17 @@ class Process():
                     ax2.set_ylabel('E [V/m]')
                     ax2.set_ylim(-self.max_number if FMax is None else -FMax, self.max_number if FMax is None else FMax)
                     for type in E:
-                        args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
-                        if type == "average fields":
-                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f"{label[type]}")
-                        elif type == "instant fields":
-                            lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f"{label[type]}")
+                        if self.Dim == 2:
+                            args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
+                            if type == "average fields":
+                                lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'r', label=f"{label[type]}")
+                            elif type == "instant fields":
+                                lns=ax2.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), 'k--', label=f"{label[type]}")
+                        elif self.Dim==1:
+                            if type == "average fields":
+                                lns=ax2.plot(axis[type]['x'], data_to_plot[type][i][:], 'r', label=f"{label[type]}")
+                            elif type == "instant fields":
+                                lns=ax2.plot(axis[type]['x'], data_to_plot[type][i][:], 'k--', label=f"{label[type]}")
                         lnf=lns if lnf is None else lnf+lns
             elif E:
                 ax.set_ylabel('E [V/m]')
