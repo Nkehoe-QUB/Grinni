@@ -59,7 +59,8 @@ class Process():
                 xmatch = re.search(r'box_x\s*=\s*(\d+).\s*\*\s*micro', line)
                 if xmatch is None: re.search(r'box_x\s*=\s*(\d+)\s*\*\s*micro', line)
                 if xmatch:
-                    self.area = float(xmatch.group(1))
+                    self.box_x = float(xmatch.group(1))
+                    self.area = self.box_x
                     areaText = str(xmatch.group(1))
                     break
             if Dim>1:
@@ -67,8 +68,9 @@ class Process():
                     ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
                     if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
                     if ymatch:
-                        self.area = self.area * float(ymatch.group(1))
-                        areaText = areaText + 'x' + str(ymatch.group(1))
+                        self.box_y = float(ymatch.group(1))
+                        self.area = self.area * self.box_y
+                        areaText = areaText + 'x' + str(self.box_y)
                         break
         print(f"\nBox size is {areaText} micrometers")
         self.Simulation = self.happi.Open(self.SimName, verbose=False)
@@ -159,7 +161,7 @@ class Process():
             elif axis_name == "x":
                 axis_data = axis_data - x_offset if x_offset is not None else axis_data  
             elif axis_name == "y":
-                axis_data = axis_data - y_offset if y_offset is not None else axis_data - ((axis_data[0]+axis_data[-1])/2)
+                axis_data = axis_data - y_offset if y_offset is not None else axis_data - (self.box_y/2)
             elif axis_name == "z":
                 axis_data = axis_data  
             elif axis_name == "user_function0":
