@@ -129,9 +129,9 @@ class Process():
                 MetaData = self.Simulation.ParticleBinning(Name, units=units)
             axis_names=['x', 'ekin', 'px']
             if self.Dim == 2:
-                axis_names.append('y', 'user_function0', 'py')
+                axis_names.extend(['y', 'user_function0', 'py'])
             elif self.Dim == 3:
-                axis_names.append('z')
+                axis_names.extend(['z', 'pz'])
             
         elif Diag == "Fields":
             if units is None:
