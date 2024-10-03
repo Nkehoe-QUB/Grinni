@@ -265,9 +265,15 @@ class Process():
                         continue
                     else:
                         FUnit = 'V/m' if 'E' in Field else 'T'
-                        ax.plot(E_axis['x'], Ey[i], label=Field)
-                        ax.set_ylim(-self.max_number if EMax is None else -EMax, self.max_number if EMax is None else EMax)
-                        ax.set_ylabel(f"{Field} [{FUnit}]")
+                        if not Species:
+                            ax.plot(E_axis['x'], Ey[i], label=Field)
+                            ax.set_ylim(-self.max_number if EMax is None else -EMax, self.max_number if EMax is None else EMax)
+                            ax.set_ylabel(f"{Field} [{FUnit}]")
+                        else:
+                            ax2 = ax.twinx()
+                            ax2.plot(E_axis['x'], Ey[i], 'r', label=Field)
+                            ax2.set_ylim(-self.max_number if EMax is None else -EMax, self.max_number if EMax is None else EMax)
+                            ax2.set_ylabel(f"{Field} [{FUnit}]")
                 if Species:
                     for type in Species:
                         SaveFile=TempFile if File is not None else f"{type}_" + TempFile
