@@ -63,7 +63,7 @@ class Process():
                     self.area = self.box_x
                     areaText = str(xmatch.group(1))
                     break
-            if Dim>1:
+            if self.Dim>1:
                 for line in file:
                     ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
                     if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
