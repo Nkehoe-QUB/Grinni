@@ -57,10 +57,13 @@ def GoTrans(Surf, Tau, Time):
         else: return Trans, np.nan
 
 def PrintPercentage(current_value, max_value):
+    import sys
     if max_value == 0:
         raise ValueError("Max value cannot be zero")
     percentage = round((current_value / max_value) * 100, 1)
-    print('|' + '#' * int(percentage) + ' ' * (100 - int(percentage)) + f'| {percentage}%')
+    bar = '|' + '#' * int(percentage) + ' ' * (100 - int(percentage))
+    sys.stdout.write(f'\r[{bar}] {percentage}%')
+    sys.stdout.flush()
 
 def MakeMovie(GraphFolder, OutputFolder, initialfile, finalfile, quantity):
     import pathlib
