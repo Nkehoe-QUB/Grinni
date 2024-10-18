@@ -348,7 +348,7 @@ class Process():
             ax.set_xlabel('E [$MeV$]')
             ax.set_xlim(0,x_max if XMax is None else XMax)
             ax.set_ylim(1e4 if YMin is None else YMin,1e11 if YMax is None else YMax)
-            ax.set_ylabel('dNdE [1/MeV]' if ProsData else 'dNdE [1/MeV $\\mu$m$^3$]')
+            ax.set_ylabel('dNdE [arb. units]')
             ax.set_yscale('log')
             ax.grid(True)
             ax.legend()
@@ -419,7 +419,7 @@ class Process():
                     ax.set_xlabel(r'x [$\mu$m]')
                     ax.set_ylabel('px [kgm/s]')
                     ax.set_ylim(min0 if YMin is None else YMin, max0 if YMax is None else YMax)
-                    cbar.set_label('dndpx [(kgm/s)$^{-1}$]')
+                    cbar.set_label('dndpx [arb. units]')
                 elif Phase[1] == "py":
                     ax.set_ylabel('py [kgms$^{-1}$]')
                     ax.set_xlabel('px [kgms$^{-1}$]')
@@ -429,7 +429,7 @@ class Process():
                     ax.set_xlabel(r'x [$\mu$m]')
                     ax.set_ylabel('Energy [MeV]')
                     ax.set_ylim(min0 if YMin is None else YMin, max0 if YMax is None else YMax)
-                    cbar.set_label('dndE [MeV$^{-1}$]')
+                    cbar.set_label('dndE [arb. units]')
                 ax.set_title(f"{axis[type]['Time'][i]}fs")
                 fig.tight_layout()
                 self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
@@ -508,7 +508,7 @@ class Process():
                             InitalFile+=1
                         continue
                     cbar = fig.colorbar(cax, aspect=50)
-                    cbar.set_label('dNdE [1/MeV $\\mu$m$^3$]')
+                    cbar.set_label('dNdE [arb. units]')
                     if LasAngle is not None:
                         ax.vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
                     ax.set_xlim(-self.np.pi/3 if YMin is None else YMin,self.np.pi/3 if YMax is None else YMax)
@@ -527,7 +527,7 @@ class Process():
                             InitalFile+=1
                         continue
                     cbar = fig.colorbar(cax, aspect=50)
-                    cbar.set_label('dNdE [1/MeV $\\mu$m$^3$]')
+                    cbar.set_label('dNdE [arb. units]')
                     if LasAngle is not None:
                         ax[Species.index(type)].vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
                     ax[Species.index(type)].set_title(f"{label[type]}", fontsize=16)
@@ -626,7 +626,7 @@ class Process():
                     ax.set_xlim(0,EMax[Species.index(type)])
                     ax.set_ylim(1e4 if YMin is None else YMin, 1e10 if YMax is None else YMax)
                     ax.set_xlabel('Energy [MeV/u]')
-                    ax.set_ylabel('dnde [1/MeV $\\mu$m$^3$]')
+                    ax.set_ylabel('dnde [arb. units]')
                     ax.grid(True)
                     ax.legend()
                     ax.set_title(f"{axis[type]['Time'][i]}fs")
