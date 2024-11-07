@@ -72,13 +72,13 @@ class Process():
                         self.area = self.area * self.box_y
                         areaText = areaText + 'x' + str(self.box_y)
                         break
-        print(f"\nBox size is {areaText} micrometers")
+        print(f"\nBox size is \033[1;33m{areaText}\033[0m micrometers")
         self.Simulation = self.happi.Open(self.SimName, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
-            raise ValueError(f"Simulation {self.SimName} does not exist")
-        else: print(f"\nSimulation {self.SimName} loaded")
+            raise ValueError(f"Simulation \033[1;31m{self.SimName}\033[0m does not exist")
+        else: print(f"\nSimulation \033[1;32m{self.SimName}\033[0m loaded")
         if x_spot == 0 or Tau == 0:
-            raise ValueError("No spot size or simulation size or Tau value was provided")
+            raise ValueError("\033[1;31mNo spot size or simulation size or Tau value was provided\033[0m")
         self.x_spot = x_spot 
         if self.x_spot > 1:
             print("\nx_spot is in meters, converting to micrometers")
@@ -98,11 +98,11 @@ class Process():
         self.raw_path = self.os.path.join(self.simulation_path,  "Raw")
         if not(self.os.path.exists(self.raw_path) and self.os.path.isdir(self.raw_path)):
             self.os.mkdir(self.raw_path)
-        print(f"\nGraphs will be saved in {self.raw_path}")
+        print(f"\nGraphs will be saved in \033[1;32m{self.raw_path}\033[0m")
         self.pros_path = self.os.path.join(self.simulation_path, "Processed")
         if not(self.os.path.exists(self.pros_path) and self.os.path.isdir(self.pros_path)):
             self.os.mkdir(self.pros_path)
-        print(f"\nVideos will be saved in {self.pros_path}")
+        print(f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m")
     
     def moving_average(self, x, w):
         return self.np.convolve(x, self.np.ones(w), 'valid') / w
@@ -717,7 +717,8 @@ class Process():
         if XMax is not None and XMax > axis['x'].max():
             print(f"XMax is greater than the maximum x value, setting XMax to {axis['x'].max()}")
             XMax = axis['x'].max()
-        CD_Surf, DenTime = getCDSurf(axis['x'], axis['y'], den_to_plot, F_Spot, self.TimeSteps.size)
+        start = self.np.argwhere(axis['Time']>-0.8*self.Tau*1e15)[0][0]
+        CD_Surf, DenTime = getCDSurf(axis['x'], axis['y'], den_to_plot, F_Spot, self.TimeSteps.size, start)
         cp=(self.Tau*1e15)/(2*self.np.sqrt(2*self.np.log(2)))
         test=Gau(axis["Time"], 1.0, 0.0, cp)
         Trans, TTrans = GoTrans(CD_Surf, self.Tau, axis["Time"])
@@ -958,6 +959,88 @@ class Process():
             ax.set(xlabel='Time (fs)', xlim=(axis[type]['Time'][0] if XMin == None else XMin, axis[type]['Time'][-1] if XMax == None else XMax), ylabel='Temperature (MeV)', title='Temperature')
             fig.tight_layout()
             self.plt.savefig(self.pros_path + '/' + SaveFile + '.png',dpi=200)
+
+    def LasIonFrontPlot(self, FSpot=1.0, EFilter=5.e-1, EMax=None, XMin=None, XMax=None, File=None):
+        SaveFile=File if File is not None else "las_ion_front"
+        data = {}
+        axis = {}
+        print(f"\nGetting data")
+        if self.Log: 
+            PrintPercentage(0, 3 )
+        data['electron'], axis['electron'] = self.GetData('ParticleBinning', 'electron density', units=self.Units, x_offset=self.x_spot)
+        if self.Log: 
+            PrintPercentage(1, 3 )
+        data['proton'], axis['proton'] = self.GetData('ParticleBinning', 'proton x-energy phase space', units=self.Units, x_offset=self.x_spot)
+        if self.Log: 
+            PrintPercentage(2, 3 )
+        data['ey'], axis['ey'] = self.GetData('Fields', 'instant fields', 'Ey', units=self.Units, x_offset=self.x_spot)
+        if self.Log: 
+            PrintPercentage(3, 3 )
+        print(f"\nData loaded")
+
+        y_args = self.np.argwhere(self.np.abs(axis['electron']['y']) < FSpot/2)
+        Ey_arg = self.np.argwhere(self.np.abs(axis['ey']['y']) < FSpot/2)
+
+        num_times = len(axis['proton']['Time'])
+        num_protons = data['proton'].shape[1]
+
+        ion_front = self.np.zeros(num_times)
+        las_front = self.np.zeros(num_times)
+
+        for t in range(num_times):
+            Outline = self.np.zeros(num_protons)
+            ekin_t = axis['proton']['ekin'][t]
+            proton_t = data['proton'][t]
+
+            for i in range(num_protons):
+                valid_indices = proton_t[i, :] > 1e5
+                if valid_indices.any():
+                    Outline[i] = self.np.max(ekin_t[valid_indices])
+                else:
+                    Outline[i] = 0
+
+            ion_front[t] = axis['proton']['x'][self.np.argmax(Outline)]
+
+            Ey_mean = self.np.mean(data['ey'][t][:, Ey_arg], axis=1)
+            filter_value = EFilter * self.np.max(abs(Ey_mean))
+            EyField = self.np.reshape(Ey_mean, axis['ey']['x'].shape)
+
+            valid_indices = abs(EyField) >= filter_value
+            if valid_indices.any():
+                las_front[t] = axis['ey']['x'][valid_indices][-1]
+            else:
+                las_front[t] = self.np.inf
+
+        print(f"\nPlotting Laser-Ion-Fronts")
+        for t in range(len(axis['proton']['Time'])):
+            fig, ax = self.plt.subplots(3, sharex=True, num=1, clear=True, figsize=(8, 12))
+            cax = ax[0].pcolormesh(axis['ey']['x'], axis['ey']['y'], data['ey'][t].T, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
+            ax2=ax[1].twinx()
+            ax[1].plot(axis['electron']['x'], self.np.mean(data['electron'][t][:, y_args], axis=1), color='blue')
+            ax2.plot(axis['ey']['x'], self.np.mean(data['ey'][t][:, Ey_arg], axis=1), color='red')
+            ax[2].pcolormesh(axis['proton']['x'], axis['proton']['ekin'][t], data['proton'][t].T, norm=self.cm.LogNorm(), cmap=self.cmaps.batlow_r)
+            ax[0].set(ylabel='y [$\\mu$m]')
+            ax[1].set(yscale='log', ylim=(1e-1, 5e1), ylabel='N$_e$ [N$_c$]')
+            ax[2].set(ylim=(0, self.np.max(axis['proton']['ekin'][len(axis['proton']['Time'])-1])), ylabel='E [MeV]',
+                      xlabel='x [$\\mu$m]', xlim=(-10 if XMin is None else XMin, 15 if XMax is None else XMax))
+            ax2.set(ylim=(-self.max_number, self.max_number), ylabel='E$_y$ [V/m]')
+            ax[1].grid()
+            ax[2].grid()
+            ax[0].axvline(x=ion_front[t], color='green', linestyle='--')
+            ax[0].axvline(x=las_front[t], color='red', linestyle='--')
+            ax[1].axvline(x=ion_front[t], color='green', linestyle='--')
+            ax[1].axvline(x=las_front[t], color='red', linestyle='--')
+            ax[2].axvline(x=ion_front[t], color='green', linestyle='--')
+            ax[2].axvline(x=las_front[t], color='red', linestyle='--')
+            fig.suptitle(f"{axis['proton']['Time'][t]} fs")
+            fig.tight_layout()
+            fig.savefig(self.raw_path + '/' + SaveFile + '_' + str(t) + '.png',dpi=200)
+            if self.Log: 
+                PrintPercentage(t, self.TimeSteps.size -1 )
+        print(f"\nLaser-Ion-Fronts saved in {self.raw_path}")
+        if self.Movie:
+            MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
+            print(f"\nMovies saved in {self.pros_path}")
 
     def Help(self):
         print(f"""\n

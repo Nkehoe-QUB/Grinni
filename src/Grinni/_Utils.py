@@ -32,7 +32,7 @@ def getFWHM(Angles, NumDen, Energy):
         a_fit, b_fit, c_fit = popt
         return 2*np.sqrt(2*np.log(2))*abs(c_fit), round((2*np.sqrt(2*np.log(2))*abs(c_fit))*180/np.pi,2)
 
-def getCDSurf(x, y, den, spot, steps):
+def getCDSurf(x, y, den, spot, steps, start):
     import numpy as np
     import matplotlib.pyplot as plt
     den_time=np.zeros((len(x), steps))
@@ -41,7 +41,9 @@ def getCDSurf(x, y, den, spot, steps):
     for i in range(steps):
         den_time[:,i] = np.mean(np.squeeze(den[i][:,y_arg]), axis=1)
         try: cd_sur=np.append(cd_sur,x[np.argwhere(den_time[:,i]>=1)[0]-1])
-        except IndexError: cd_sur=np.append(cd_sur,np.nan)
+        except IndexError: 
+            if i < start: cd_sur=np.append(cd_sur,0.0)
+            else : cd_sur=np.append(cd_sur,np.nan)
     return cd_sur, den_time
 
 def GoTrans(Surf, Tau, Time):
