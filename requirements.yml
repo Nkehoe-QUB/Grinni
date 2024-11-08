@@ -16,3 +16,4 @@ dependencies:
   - pint
   - jupyter
   - notebook
+  - bayesian-optimization
