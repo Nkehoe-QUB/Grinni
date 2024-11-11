@@ -997,6 +997,7 @@ class Process():
         ion_front = self.np.zeros(num_times)
         las_front = self.np.zeros(num_times)
 
+        print(f"\nCalculating Laser-Ion-Fronts")
         for t in range(num_times):
             Outline = self.np.zeros(num_protons)
             ekin_t = axis['proton']['ekin'][t]
@@ -1022,17 +1023,19 @@ class Process():
                 las_front[t] = self.np.inf
 
         print(f"\nPlotting Laser-Ion-Fronts")
-        for t in range(len(axis['proton']['Time'])):
+        xmin = self.np.min(axis['ey']['x']) if XMin is None else XMin
+        xmax = self.np.max(axis['ey']['x']) if XMax is None else XMax
+        for t in range(self.TimeSteps.size):
             fig, ax = self.plt.subplots(3, sharex=True, num=1, clear=True, figsize=(8, 12))
-            cax = ax[0].pcolormesh(axis['ey']['x'], axis['ey']['y'], data['ey'][t].T, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
+            ax[0].pcolormesh(axis['ey']['x'], axis['ey']['y'], data['ey'][t].T, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
             ax2=ax[1].twinx()
             ax[1].plot(axis['electron']['x'], self.np.mean(data['electron'][t][:, y_args], axis=1), color='blue')
             ax2.plot(axis['ey']['x'], self.np.mean(data['ey'][t][:, Ey_arg], axis=1), color='red')
             ax[2].pcolormesh(axis['proton']['x'], axis['proton']['ekin'][t], data['proton'][t].T, norm=self.cm.LogNorm(), cmap=self.cmaps.batlow_r)
             ax[0].set(ylabel='y [$\\mu$m]')
-            ax[1].set(yscale='log', ylim=(1e-1, 5e1), ylabel='N$_e$ [N$_c$]')
-            ax[2].set(ylim=(0, self.np.max(axis['proton']['ekin'][len(axis['proton']['Time'])-1])), ylabel='E [MeV]',
-                      xlabel='x [$\\mu$m]', xlim=(-10 if XMin is None else XMin, 15 if XMax is None else XMax))
+            ax[1].set(yscale='log', ylim=(1e-2, 5e1), ylabel='N$_e$ [N$_c$]')
+            ax[2].set(ylim=(0, self.np.max(axis['proton']['ekin'])), ylabel='E [MeV]',
+                      xlabel='x [$\\mu$m]', xlim=(xmin, xmax))
             ax2.set(ylim=(-self.max_number, self.max_number), ylabel='E$_y$ [V/m]')
             ax[1].grid()
             ax[2].grid()
