@@ -345,7 +345,7 @@ class Process():
                     dfs.to_csv(file, index=False)
                 print(f"\n{type} energies saved in {self.simulation_path}")
 
-        fig, ax = self.plt.subplots(num=1,clear=True, figsize=(8,6))
+        fig, ax = self.plt.subplots(num=2,clear=True, figsize=(8,6))
         for i in range(self.TimeSteps.size):
             ax.clear()
             for type in Species:
@@ -408,7 +408,7 @@ class Process():
                         max0 = self.np.max(axis[type][Phase[1]][i])
                     if self.np.min(axis[type][Phase[1]][i]) < min0:
                         min0 = self.np.min(axis[type][Phase[1]][i])
-            fig, ax = self.plt.subplots(num=1,clear=True, figsize=(8,6))
+            fig, ax = self.plt.subplots(num=3,clear=True, figsize=(8,6))
             for i in range(self.TimeSteps.size):
                 ax.clear()
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
@@ -501,7 +501,7 @@ class Process():
                 print(f"\n{type} angle energies saved in {self.simulation_path}")
             EMax.append(x_max)
         if len(Species) == 1:
-            fig, ax = self.plt.subplots(num=1,clear=True, subplot_kw={'projection': 'polar'}, figsize=(8,6))
+            fig, ax = self.plt.subplots(num=4,clear=True, subplot_kw={'projection': 'polar'}, figsize=(8,6))
             type = Species[0]
             for i in range(self.TimeSteps.size):
                 ax.clear()
@@ -527,7 +527,7 @@ class Process():
                 if self.Log: 
                     PrintPercentage(i, self.TimeSteps.size -1 )
         else:
-            fig, ax = self.plt.subplots(ncols=len(Species), num=1,clear=True, subplot_kw={'projection': 'polar'}, figsize=(8*len(Species),6))
+            fig, ax = self.plt.subplots(ncols=len(Species), num=4,clear=True, subplot_kw={'projection': 'polar'}, figsize=(8*len(Species),6))
             for i in range(self.TimeSteps.size):
                 for a in ax: a.clear()
                 for type in Species:
@@ -613,7 +613,7 @@ class Process():
             elif not DataOnly:
                 print(f"\nPlotting {type} angle energies")
                 for i in range(self.TimeSteps.size):
-                    fig, ax = self.plt.subplots(num=1,clear=True)
+                    fig, ax = self.plt.subplots(num=5,clear=True)
                     SaveFile= TempFile + f"_{type}" 
                     if self.np.max(axis[type]['ekin'][i]) <= EMax[Species.index(type)]/10:
                         InitialFile=i+1
@@ -674,7 +674,7 @@ class Process():
         print(f"\nPlotting {Species} hi-res densities")
         for i in range(self.TimeSteps.size):
             if len(Species) == 1:
-                fig, ax = self.plt.subplots(num=1,clear=True)
+                fig, ax = self.plt.subplots(num=6,clear=True)
                 for type in Species:
                     SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                     den = self.np.swapaxes(den_to_plot[type][i], 0, 1)
@@ -686,7 +686,7 @@ class Process():
                     ax.set_title(f"{axis[type]['Time'][i]}")
             
             else:
-                fig, ax = self.plt.subplots(nrows=len(Species), num=1,clear=True, sharex=True)
+                fig, ax = self.plt.subplots(nrows=len(Species), num=6,clear=True, sharex=True)
                 for type in Species:
                     SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                     den = self.np.swapaxes(den_to_plot[type][i], 0, 1)
@@ -734,7 +734,7 @@ class Process():
         Trans, TTrans = GoTrans(CD_Surf, self.Tau, axis["Time"])
         SaveFile=File if File is not None else "rel_cd_surface"
 
-        fig =self.plt.figure(figsize=(8,5),num=1,clear=True)
+        fig =self.plt.figure(figsize=(8,5),num=7,clear=True)
         gs = self.gs.GridSpec(1,2,width_ratios=[1,4])
         ax1 = self.plt.subplot(gs[0])
         ax2 = self.plt.subplot(gs[1], sharey=ax1)
@@ -783,7 +783,7 @@ class Process():
         print(f"\nPlotting {Species} densities over time")
         SaveFile=f"{File}" if File is not None else f"energy_time"
         
-        fig, ax = self.plt.subplots(num=1,clear=True)
+        fig, ax = self.plt.subplots(num=8,clear=True)
         Max_Energy = {}
         E_derv = {}
         for type in Species:
@@ -861,7 +861,7 @@ class Process():
         colours=['b','g','y','m','c']
         for i in range(self.TimeSteps.size):
             lnf=None
-            fig, ax = self.plt.subplots(num=1,clear=True, sharex=True)
+            fig, ax = self.plt.subplots(num=9,clear=True, sharex=True)
             if Species:
                 ax.set_ylabel('N [$N_c$]')
                 ax.set_yscale('log')
@@ -964,7 +964,7 @@ class Process():
                         fig.tight_layout()
                         self.plt.savefig(self.raw_path + '/' + SaveFile + 'Tmp_' + str(t) + '.png',dpi=200)
 
-            fig, ax = self.plt.subplots()
+            fig, ax = self.plt.subplots(num=10,clear=True)
             ax.plot(axis[type]['Time'], Temp, 'k-')
             ax.set(xlabel='Time (fs)', xlim=(axis[type]['Time'][0] if XMin == None else XMin, axis[type]['Time'][-1] if XMax == None else XMax), ylabel='Temperature (MeV)', title='Temperature')
             fig.tight_layout()
@@ -1026,7 +1026,7 @@ class Process():
         xmin = self.np.min(axis['ey']['x']) if XMin is None else XMin
         xmax = self.np.max(axis['ey']['x']) if XMax is None else XMax
         for t in range(self.TimeSteps.size):
-            fig, ax = self.plt.subplots(3, sharex=True, num=1, clear=True, figsize=(8, 12))
+            fig, ax = self.plt.subplots(3, sharex=True, num=11, clear=True, figsize=(8, 10))
             ax[0].pcolormesh(axis['ey']['x'], axis['ey']['y'], data['ey'][t].T, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
             ax2=ax[1].twinx()
             ax[1].plot(axis['electron']['x'], self.np.mean(data['electron'][t][:, y_args], axis=1), color='blue')
@@ -1047,7 +1047,7 @@ class Process():
             ax[2].axvline(x=las_front[t], color='red', linestyle='--')
             fig.suptitle(f"{axis['proton']['Time'][t]} fs")
             fig.tight_layout()
-            fig.savefig(self.raw_path + '/' + SaveFile + '_' + str(t) + '.png',dpi=200)
+            fig.savefig(self.raw_path + '/' + SaveFile + '_' + str(t) + '.png',dpi=300)
             if self.Log: 
                 PrintPercentage(t, self.TimeSteps.size -1 )
         print(f"\nLaser-Ion-Fronts saved in {self.raw_path}")
