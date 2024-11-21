@@ -1045,7 +1045,12 @@ class Process():
             ax[1].axvline(x=las_front[t], color='red', linestyle='--')
             ax[2].axvline(x=ion_front[t], color='green', linestyle='--')
             ax[2].axvline(x=las_front[t], color='red', linestyle='--')
-            fig.suptitle(f"{axis['proton']['Time'][t]} fs")
+            for a in ax.flatten():
+                for label in (a.get_xticklabels() + a.get_yticklabels()): 
+                    label.set_fontsize(16)
+                a.xaxis.label.set_fontsize(18)
+                a.yaxis.label.set_fontsize(18)
+            fig.suptitle(f"{axis['proton']['Time'][t]} fs", fontsize=22)
             fig.tight_layout()
             fig.savefig(self.raw_path + '/' + SaveFile + '_' + str(t) + '.png',dpi=300)
             if self.Log: 
