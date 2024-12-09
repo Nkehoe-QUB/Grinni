@@ -1,7 +1,7 @@
 from ._Utils import Gau, getFWHM, getCDSurf, GoTrans, PrintPercentage, MakeMovie, MovingAverage
 
 class Process():
-    def __init__(self, SimName=".", x_spot=0, Tau=0, Ped=None, Dim=2, Log=True, Movie=True):
+    def __init__(self, SimName=".", x_spot=0, Tau=0, Ped=None, Dim=2, Geo='Car', Log=True, Movie=True):
         ########### Constants ##################################
         self.c = 299792458. 
         self.me = 9.11e-31
@@ -48,6 +48,9 @@ class Process():
         self.SimName = SimName
         self.x_spot = x_spot
         self.Dim = Dim
+        self.Geo = Geo
+        if self.Geo not in ['Car', 'Cyl']:
+            raise ValueError(f"\033[1;31mIncorrect geometry given: {self.Geo}\nMust be 'Car' or 'Cyl'\033[0m")
         self.Log = Log
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'um^-3*kg^-1*(m/s)^-1', 'T']
@@ -63,17 +66,29 @@ class Process():
                     self.area = self.box_x
                     areaText = str(xmatch.group(1))
                     break
+                if self.Dim>1:
+                    if self.Geo=="Car":
+                        ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
+                        if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
+                        if ymatch:
+                            self.box_y = float(ymatch.group(1))
+                            self.area = self.area * self.box_y
+                            areaText = areaText + 'x' + str(self.box_y)
+                            break
+                    elif self.Geo=="Cyl":
+                        rmatch = re.search(r'box_r\s*=\s*(\d+).\s*\*\s*micro', line)
+                        if rmatch is None: re.search(r'box_r\s*=\s*(\d+)\s*\*\s*micro', line)
+                        if rmatch:
+                            self.box_r = float(rmatch.group(1))
+                            self.area = self.area * (self.box_r ** 2)
+                            areaText = areaText + 'x' + str(self.box_r) + '(Cylindrical)'
+                            break
             if self.Dim>1:
-                for line in file:
-                    ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
-                    if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
-                    if ymatch:
-                        self.box_y = float(ymatch.group(1))
-                        self.area = self.area * self.box_y
-                        areaText = areaText + 'x' + str(self.box_y)
-                        break
-                if ymatch is None:
+                if self.Geo=="Car" and ymatch is None:
                     raise ValueError("\033[1;31mbox_y not found in simulation file\033[0m")
+                elif self.Geo=="Cyl" and rmatch is None:
+                    raise ValueError("\033[1;31mbox_r not found in simulation file\033[0m")
+            
         print(f"\nBox size is \033[1;33m{areaText}\033[0m micrometers")
         self.Simulation = self.happi.Open(self.SimName, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
@@ -1012,7 +1027,10 @@ class Process():
 
             ion_front[t] = axis['proton']['x'][self.np.argmax(Outline)]
 
-            Ey_mean = self.np.mean(data['ey'][t][:, Ey_arg], axis=1)
+            try: Ey_mean = self.np.mean(data['ey'][t][:, Ey_arg], axis=1)
+            except IndexError:
+                num_times = t-1
+                break
             filter_value = EFilter * self.np.max(abs(Ey_mean))
             EyField = self.np.reshape(Ey_mean, axis['ey']['x'].shape)
 
@@ -1025,7 +1043,7 @@ class Process():
         print(f"\nPlotting Laser-Ion-Fronts")
         xmin = self.np.min(axis['ey']['x']) if XMin is None else XMin
         xmax = self.np.max(axis['ey']['x']) if XMax is None else XMax
-        for t in range(self.TimeSteps.size):
+        for t in range(num_times):
             fig, ax = self.plt.subplots(3, sharex=True, num=11, clear=True, figsize=(8, 10))
             ax[0].pcolormesh(axis['ey']['x'], axis['ey']['y'], data['ey'][t].T, cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
             ax2=ax[1].twinx()
@@ -1057,7 +1075,7 @@ class Process():
                 PrintPercentage(t, self.TimeSteps.size -1 )
         print(f"\nLaser-Ion-Fronts saved in {self.raw_path}")
         if self.Movie:
-            MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
+            MakeMovie(self.raw_path, self.pros_path, 0, num_times, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
 
     def Help(self):
