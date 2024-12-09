@@ -423,8 +423,8 @@ class Process():
                     ax.set(xlabel=r'x [$\mu$m]', ylabel='px [kgm/s]', ylim=(min0 if YMin is None else YMin, max0 if YMax is None else YMax))
                     cbar.set_label('dndpx [arb. units]')
                 elif Phase[1] == "py":
-                    ax.set(ylabel='py [kgms$^{-1}$]', ylim=(min1 if YMin is None else YMin, max1 if YMax is None else YMax),
-                           xlabel='px [kgms$^{-1}$]', xlim=(min0 if XMin is None else XMin, max0 if XMax is None else XMax))
+                    ax.set(ylabel='py [kgm/s]', ylim=(min1 if YMin is None else YMin, max1 if YMax is None else YMax),
+                           xlabel='px [kgm/s]', xlim=(min0 if XMin is None else XMin, max0 if XMax is None else XMax))
                 elif Phase[1] == "ekin":
                     ax.set(ylabel='Energy [MeV]', ylim=(min0 if YMin is None else YMin, max0 if YMax is None else YMax),
                            xlabel=r'x [$\mu$m]')
