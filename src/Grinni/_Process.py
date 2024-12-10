@@ -1,7 +1,7 @@
 from ._Utils import Gau, getFWHM, getCDSurf, GoTrans, PrintPercentage, MakeMovie, MovingAverage
 
 class Process():
-    def __init__(self, SimName=".", x_spot=0, Tau=0, Ped=None, Dim=2, Geo='Car', Log=True, Movie=True):
+    def __init__(self, SimName=".", Ped=None, Log=True, Movie=True):
         ########### Constants ##################################
         self.c = 299792458. 
         self.me = 9.11e-31
@@ -23,14 +23,12 @@ class Process():
             raise ImportError("happi is not installed")
         import numpy as np
         from cmcrameri import cm as cmaps
-        import matplotlib
+        import matplotlib, os, re
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         import matplotlib.colors as colors
         import matplotlib.gridspec as gridspec
-        import os
         import pandas as pd
-        import re
         self.pd = pd
         self.os=os
         self.happi = happi
@@ -46,64 +44,79 @@ class Process():
         self.gs = gridspec
         self.re = re
         self.SimName = SimName
-        self.x_spot = x_spot
-        self.Dim = Dim
-        self.Geo = Geo
-        if self.Geo not in ['Car', 'Cyl']:
-            raise ValueError(f"\033[1;31mIncorrect geometry given: {self.Geo}\nMust be 'Car' or 'Cyl'\033[0m")
+        self.SimulationPath = self.os.path.abspath(self.SimName)
         self.Log = Log
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'um^-3*kg^-1*(m/s)^-1', 'T']
-        file_path = f'{self.SimName}/smilei.py'
-        self.area = None
-        areaText=''
-        with open(file_path, 'r') as file:
-            for line in file:
-                xmatch = re.search(r'box_x\s*=\s*(\d+).\s*\*\s*micro', line)
-                if xmatch is None: re.search(r'box_x\s*=\s*(\d+)\s*\*\s*micro', line)
-                if xmatch:
-                    self.box_x = float(xmatch.group(1))
-                    self.area = self.box_x
-                    areaText = str(xmatch.group(1))
-                    break
-                if self.Dim>1:
-                    if self.Geo=="Car":
-                        ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
-                        if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
-                        if ymatch:
-                            self.box_y = float(ymatch.group(1))
-                            self.area = self.area * self.box_y
-                            areaText = areaText + 'x' + str(self.box_y)
-                            break
-                    elif self.Geo=="Cyl":
-                        rmatch = re.search(r'box_r\s*=\s*(\d+).\s*\*\s*micro', line)
-                        if rmatch is None: re.search(r'box_r\s*=\s*(\d+)\s*\*\s*micro', line)
-                        if rmatch:
-                            self.box_r = float(rmatch.group(1))
-                            self.area = self.area * (self.box_r ** 2)
-                            areaText = areaText + 'x' + str(self.box_r) + '(Cylindrical)'
-                            break
-            if self.Dim>1:
-                if self.Geo=="Car" and ymatch is None:
-                    raise ValueError("\033[1;31mbox_y not found in simulation file\033[0m")
-                elif self.Geo=="Cyl" and rmatch is None:
-                    raise ValueError("\033[1;31mbox_r not found in simulation file\033[0m")
-            
-        print(f"\nBox size is \033[1;33m{areaText}\033[0m micrometers")
-        self.Simulation = self.happi.Open(self.SimName, verbose=False)
+        self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
-            raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimName}\033[0m does not exist\033[0m")
-        else: print(f"\nSimulation \033[1;32m{self.SimName}\033[0m loaded")
-        if x_spot == 0 or Tau == 0:
-            raise ValueError("\033[1;31mNo spot size or simulation size or Tau value was provided\033[0m")
-        self.x_spot = x_spot 
-        if self.x_spot > 1:
-            print("\nx_spot is in meters, converting to micrometers")
-            self.x_spot = self.x_spot*self.micro
-        self.Tau = Tau
-        if self.Tau > 1:
-            print("\nTau is in seconds, converting to femtoseconds")
-            self.Tau = self.Tau*self.femto
+            raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
+        else: print(f"\nSimulation \033[1;32m{self.SimulationPath}\033[0m loaded")
+        file_path = f'{self.SimulationPath}/smilei.py'
+        with open(file_path, 'r') as file:
+            l_found=False
+            x_found=False
+            t_found=False
+            for line in file:
+                if not l_found:
+                    lmatch = re.search(r'lambda_las\s*=\s*([\d.]+)\s*\*\s*(\w+)', line)
+                    if lmatch:
+                        lambda_las = float(lmatch.group(1)) * getattr(self, lmatch.group(2))
+                        l_found=True
+                if not x_found:
+                    xmatch = re.search(r'x_vac\s*=\s*([\d.]+)\s*\*\s*(\w+)', line)
+                    if xmatch:
+                        self.x_spot = float(xmatch.group(1)) * getattr(self, xmatch.group(2))
+                        x_found=True
+                if not t_found:
+                    tmatch = re.search(r'Tau_I\s*=\s*([\d.]+)\s*\*\s*(\w+)', line)
+                    if tmatch:
+                        self.Tau = float(tmatch.group(1)) * getattr(self, tmatch.group(2))
+                        t_found=True
+                if l_found and x_found and t_found:
+                    break
+            if lmatch is None:
+                raise ValueError("\033[1;31mlambda_las not found in simulation file\033[0m")
+            if xmatch is None:
+                print("\033[1;31mx_vac not found in simulation file! Setting to 0\033[0m")
+                self.x_spot = 0
+            if tmatch is None:
+                print("\033[1;31mTau_I not found in simulation file! Setting to 0\033[0m")
+                self.Tau = 0
+        omega_las = 2.*self.np.pi*self.c / lambda_las
+        self.L_r = self.c / omega_las
+        self.Box = {}
+        self.Res = {}
+        self.Area = 1.
+        Message = '\nGeometry: '
+        AreaText = ''
+        self.Box['x'] = float(self.Simulation.namelist.Main.grid_length[0])*self.L_r
+        self.Res['x'] = float(self.Simulation.namelist.Main.cell_length[0])*self.L_r
+        AreaText = str(self.np.round(self.Box['x']/self.micro, 2))
+        if "cartesian" in self.Simulation.namelist.Main.geometry:
+            Message += 'Cartesian'
+            self.Geo = "Car"
+            self.Dim = self.Simulation.namelist.Main.geometry.split('D')[0]
+            Message += f'\t\tDimensions: {self.Dim}\n'
+            if self.Dim > 1:
+                self.Box['y'] = float(self.Simulation.namelist.Main.grid_length[1])*self.L_r
+                self.Res['y'] = float(self.Simulation.namelist.Main.cell_length[1])*self.L_r
+                AreaText = AreaText + 'x' + str(self.np.round(self.Box['y']/self.micro, 2))
+            if self.Dim > 2:
+                self.Box['z'] = float(self.Simulation.namelist.Main.grid_length[2])*self.L_r
+                self.Res['z'] = float(self.Simulation.namelist.Main.cell_length[2])*self.L_r
+                AreaText = AreaText + 'x' + str(self.np.round(self.Box['z']/self.micro, 2))
+            for i in self.box.keys(): self.Area *= self.box[i]
+        elif "cylindrical" in self.Simulation.namelist.Main.geometry:
+            Message += 'Cylindrical\t\tDimensions: 3\n'
+            self.Geo = "Cyl"
+            self.Dim = 3
+            self.Box['r'] = float(self.Simulation.namelist.Main.grid_length[1])*self.L_r
+            self.Res['r'] = float(self.Simulation.namelist.Main.cell_length[1])*self.L_r
+            AreaText = AreaText + 'x' + str(self.np.round(self.Box['r']/self.micro, 2)) + ' (Cylindrical)'
+            self.Area = self.Box['x'] * (self.Box['r']**2)
+        Message += f'\nBox size is \033[1;33m{AreaText}\033[0m micrometers'
+        print(Message)
         self.t0=((self.x_spot/self.c)+((2*self.Tau)/(2*self.np.sqrt(self.np.log(2)))))/self.femto
         if Ped is not None: 
             print("\nAdding Ped to t0")
@@ -111,18 +124,77 @@ class Process():
                 print("\nPed is in seconds, converting to picoseconds")
                 Ped = Ped*self.pico
             self.t0 = self.t0 + (Ped/self.femto)
-        self.simulation_path = self.os.path.abspath(self.SimName)
-        self.raw_path = self.os.path.join(self.simulation_path,  "Raw")
+        self.raw_path = self.os.path.join(self.SimulationPath,  "Raw")
         if not(self.os.path.exists(self.raw_path) and self.os.path.isdir(self.raw_path)):
             self.os.mkdir(self.raw_path)
         print(f"\nGraphs will be saved in \033[1;32m{self.raw_path}\033[0m")
-        self.pros_path = self.os.path.join(self.simulation_path, "Processed")
+        self.pros_path = self.os.path.join(self.SimulationPath, "Processed")
         if not(self.os.path.exists(self.pros_path) and self.os.path.isdir(self.pros_path)):
             self.os.mkdir(self.pros_path)
         print(f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m")
+        # Message = '\nGeometry: ' + ('Cartesian' if self.Geo=='Car' else 'Cylindrical') + '\t\tDimensions: ' + str(self.Dim) + '\n\n' + f'Box size is \033[1;33m{areaText}\033[0m micrometers\n'
+
+
+
+        # self.x_spot = x_spot
+        # self.Geo = Geo
+        # if self.Geo not in ['Car', 'Cyl']:
+        #     raise ValueError(f"\033[1;31mIncorrect geometry given: {self.Geo}\nMust be 'Car' or 'Cyl'\033[0m")
+        # self.Dim = Dim if self.Geo=='Car' else 3
+        
+        # self.area = None
+        # areaText=''
+        # with open(file_path, 'r') as file:
+        #     for line in file:
+        #         xmatch = re.search(r'box_x\s*=\s*(\d+).\s*\*\s*micro', line)
+        #         if xmatch is None: re.search(r'box_x\s*=\s*(\d+)\s*\*\s*micro', line)
+        #         if xmatch:
+        #             self.box_x = float(xmatch.group(1))
+        #             self.area = self.box_x
+        #             areaText = str(xmatch.group(1))
+        #             break
+        #     if xmatch is None:
+        #             raise ValueError("\033[1;31mbox_x not found in simulation file\033[0m")
+        #     if self.Dim>1:
+        #         for line in file:
+        #             if self.Geo=="Car":
+        #                 ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
+        #                 if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
+        #                 if ymatch:
+        #                     self.box_y = float(ymatch.group(1))
+        #                     self.area = self.area * self.box_y
+        #                     areaText = areaText + 'x' + str(self.box_y)
+        #                     break
+        #             elif self.Geo=="Cyl":
+        #                 rmatch = re.search(r'box_r\s*=\s*(\d+).\s*\*\s*micro', line)
+        #                 if rmatch is None: re.search(r'box_r\s*=\s*(\d+)\s*\*\s*micro', line)
+        #                 if rmatch:
+        #                     self.box_r = float(rmatch.group(1))
+        #                     self.area = self.area * (self.box_r ** 2)
+        #                     areaText = areaText + 'x' + str(self.box_r) + ' (Cylindrical)'
+        #                     break
+        #         if self.Geo=="Car" and ymatch is None:
+        #             raise ValueError("\033[1;31mbox_y not found in simulation file\033[0m")
+        #         elif self.Geo=="Cyl" and rmatch is None:
+        #             raise ValueError("\033[1;31mbox_r not found in simulation file\033[0m")
+            
+        
+        
+        # if x_spot == 0 or Tau == 0:
+        #     raise ValueError("\033[1;31mNo spot size or simulation size or Tau value was provided\033[0m")
+        # self.x_spot = x_spot 
+        # if self.x_spot > 1:
+        #     print("\nx_spot is in meters, converting to micrometers")
+        #     self.x_spot = self.x_spot*self.micro
+        # self.Tau = Tau
+        # if self.Tau > 1:
+        #     print("\nTau is in seconds, converting to femtoseconds")
+        #     self.Tau = self.Tau*self.femto
+        
+        
     
-    def moving_average(self, x, w):
-        return self.np.convolve(x, self.np.ones(w), 'valid') / w
+    # def moving_average(self, x, w):
+    #     return self.np.convolve(x, self.np.ones(w), 'valid') / w
 
     def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None):
         # Check if Diag is a valid diagnostic
@@ -137,7 +209,9 @@ class Process():
                 raise TypeError("units must be a list of strings")
         
         # Get the data
-        if x_offset is not None and x_offset < 1:
+        if x_offset is None:
+            x_offset = self.x_spot
+        elif x_offset is not None and x_offset < 1:
             x_offset = x_offset/self.micro
         if y_offset is not None and y_offset < 1:
             y_offset = y_offset/self.micro
@@ -150,17 +224,33 @@ class Process():
             if self.Dim == 2:
                 axis_names.extend(['y', 'user_function0', 'py'])
             elif self.Dim == 3:
-                axis_names.extend(['z', 'pz'])
+                axis_names.extend(['y', 'z', 'user_function0', 'py', 'pz'])
             
         elif Diag == "Fields":
-            if units is None:
-                MetaData = self.Simulation.Field(Name, Field)
-            elif units is not None:
-                MetaData = self.Simulation.Field(Name, Field, units=units)
+            if self.Geo == "Cyl":
+                if units is None:
+                    try: MetaData = self.Simulation.Probe(Name, Field)
+                    except Exception: 
+                        try: MetaData = self.Simulation.Probe('instant2 fields', Field)
+                        except Exception: raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
+                elif units is not None:
+                    try: MetaData = self.Simulation.Probe(Name, Field, units=units)
+                    except Exception:
+                        try: MetaData = self.Simulation.Probe('instant2 fields', Field, units=units)
+                        except Exception: raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
+            elif self.Geo == "Car":
+                if units is None:
+                    MetaData = self.Simulation.Field(Name, Field)
+                elif units is not None:
+                    MetaData = self.Simulation.Field(Name, Field, units=units)
             axis_names=['x', 'y']
         else: raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
 
         Values = self.np.array(MetaData.getData())
+        if Diag == "ParticleBinning" and self.Geo == "Cyl":
+            if len(Values.shape)>3:
+                Values = self.np.array(self.Simulation.ParticleBinning(Name, units=units, average={"z":"all"}).getData())
+                print(f"\n\033[1;31m{Name} is 3 dimensional\033[0m\nAveraging over z")
         self.TimeSteps = self.np.array(MetaData.getTimesteps())
         if Diag == "Fields":
             self.max_number = float('-inf')  # Initialize max_number to negative infinity
@@ -172,13 +262,21 @@ class Process():
         axis["Time"] = self.np.round(MetaData.getTimes()-self.t0,2)
         bin_size = None
         for axis_name in axis_names:
-            axis_data = self.np.array(MetaData.getAxis(axis_name))
+            if self.Geo == "Cyl" and Diag == "Fields" and axis_name == "x":
+                axis_data = self.np.array(MetaData.getAxis('axis1')[:,0])
+            elif self.Geo == "Cyl" and Diag == "Fields" and axis_name == "y":
+                axis_data = self.np.array(MetaData.getAxis('axis2')[:,1])
+            else:
+                axis_data = self.np.array(MetaData.getAxis(axis_name))
             if len(axis_data)==0:
                     continue
             elif axis_name == "x":
                 axis_data = axis_data - x_offset if x_offset is not None else axis_data  
             elif axis_name == "y":
-                axis_data = axis_data - y_offset if y_offset is not None else axis_data - (self.box_y/2)
+                if self.Geo == "Car":
+                    axis_data = axis_data - y_offset if y_offset is not None else axis_data - (self.box_y/2)
+                elif self.Geo == "Cyl":
+                    axis_data = axis_data - y_offset if y_offset is not None else axis_data
             elif axis_name == "z":
                 axis_data = axis_data  
             elif axis_name == "user_function0":
