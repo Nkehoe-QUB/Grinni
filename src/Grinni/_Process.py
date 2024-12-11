@@ -292,7 +292,7 @@ class Process():
                 for t in self.TimeSteps[1:]:
                     axis_data=self.np.vstack((axis_data, self.np.array(MetaData.getAxis('ekin', timestep=t)/Z)))
                 if ProsData:
-                    Values = Values * (self.area)
+                    Values = Values * (self.Area)
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
