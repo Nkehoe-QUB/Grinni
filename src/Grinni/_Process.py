@@ -96,7 +96,7 @@ class Process():
         if "cartesian" in self.Simulation.namelist.Main.geometry:
             Message += 'Cartesian'
             self.Geo = "Car"
-            self.Dim = self.Simulation.namelist.Main.geometry.split('D')[0]
+            self.Dim = int(self.Simulation.namelist.Main.geometry.split('D')[0])
             Message += f'\t\tDimensions: {self.Dim}\n'
             if self.Dim > 1:
                 self.Box['y'] = float(self.Simulation.namelist.Main.grid_length[1])*self.L_r
@@ -106,7 +106,7 @@ class Process():
                 self.Box['z'] = float(self.Simulation.namelist.Main.grid_length[2])*self.L_r
                 self.Res['z'] = float(self.Simulation.namelist.Main.cell_length[2])*self.L_r
                 AreaText = AreaText + 'x' + str(self.np.round(self.Box['z']/self.micro, 2))
-            for i in self.box.keys(): self.Area *= self.box[i]
+            for i in self.Box.keys(): self.Area *= self.Box[i]
         elif "cylindrical" in self.Simulation.namelist.Main.geometry:
             Message += 'Cylindrical\t\tDimensions: 3\n'
             self.Geo = "Cyl"
@@ -292,7 +292,7 @@ class Process():
                 for t in self.TimeSteps[1:]:
                     axis_data=self.np.vstack((axis_data, self.np.array(MetaData.getAxis('ekin', timestep=t)/Z)))
                 if ProsData:
-                    Values = Values * (self.area)
+                    Values = Values * (self.Area)
             elif axis_name == "px":
                 if "x-px" in Name:
                     bin_size = axis['x'][1]-axis['x'][0]
