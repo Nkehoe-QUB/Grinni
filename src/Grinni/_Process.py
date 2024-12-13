@@ -47,7 +47,7 @@ class Process():
         self.SimulationPath = self.os.path.abspath(self.SimName)
         self.Log = Log
         self.Movie = Movie
-        self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'm^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
+        self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
@@ -106,7 +106,7 @@ class Process():
                 self.Box['z'] = float(self.Simulation.namelist.Main.grid_length[2])*self.L_r
                 self.Res['z'] = float(self.Simulation.namelist.Main.cell_length[2])*self.L_r
                 AreaText = AreaText + 'x' + str(self.np.round(self.Box['z']/self.micro, 2))
-            for i in self.Box.keys(): self.Area *= self.Box[i]
+            for i in self.Box.keys(): self.Area *= self.Box[i]/self.micro
         elif "cylindrical" in self.Simulation.namelist.Main.geometry:
             Message += 'Cylindrical\t\tDimensions: 3\n'
             self.Geo = "Cyl"
@@ -114,7 +114,7 @@ class Process():
             self.Box['r'] = float(self.Simulation.namelist.Main.grid_length[1])*self.L_r
             self.Res['r'] = float(self.Simulation.namelist.Main.cell_length[1])*self.L_r
             AreaText = AreaText + 'x' + str(self.np.round(self.Box['r']/self.micro, 2)) + ' (Cylindrical)'
-            self.Area = self.Box['x'] * (self.Box['r']**2)
+            self.Area = (self.Box['x']/self.micro) * ((self.Box['r']/self.micro)**2)
         Message += f'\nBox size is \033[1;33m{AreaText}\033[0m micrometers'
         print(Message)
         self.t0=((self.x_spot/self.c)+((2*self.Tau)/(2*self.np.sqrt(self.np.log(2)))))/self.femto
