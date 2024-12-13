@@ -1,4 +1,4 @@
-from ._Utils import Gau, getFWHM, getCDSurf, GoTrans, PrintPercentage, MakeMovie, MovingAverage
+from ._Utils import Gau, getFWHM, getCDSurf, GoTrans, PrintPercentage, MakeMovie, MovingAverage, round_up_scientific_notation
 
 class Process():
     def __init__(self, SimName=".", Ped=None, Log=True, Movie=True):
@@ -47,7 +47,7 @@ class Process():
         self.SimulationPath = self.os.path.abspath(self.SimName)
         self.Log = Log
         self.Movie = Movie
-        self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'um^-3*kg^-1*(m/s)^-1', 'T']
+        self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'm^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
@@ -274,7 +274,7 @@ class Process():
                 axis_data = axis_data - x_offset if x_offset is not None else axis_data  
             elif axis_name == "y":
                 if self.Geo == "Car":
-                    axis_data = axis_data - y_offset if y_offset is not None else axis_data - (self.Box['y']/2)
+                    axis_data = axis_data - y_offset if y_offset is not None else axis_data - ((self.Box['y']/self.micro)/2)
                 elif self.Geo == "Cyl":
                     axis_data = axis_data - y_offset if y_offset is not None else axis_data
             elif axis_name == "z":
@@ -337,6 +337,7 @@ class Process():
         axis={}
         TempFile=File if File is not None else "density"
         if Species:
+            d_max = {type:0 for type in Species}
             for type in Species:
                 Diag=type + ' density'
                 if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
@@ -348,6 +349,8 @@ class Process():
                     continue
                 den_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=self.x_spot)
                 den_to_plot[type] = self.np.swapaxes(den_to_plot[type], 1,2)
+                if self.np.max(den_to_plot[type]) > d_max[type]:
+                    d_max[type] = round_up_scientific_notation(self.np.max(den_to_plot[type]))
         
         if Species: print(f"\nPlotting {Species} densities")
         else: print(f"\nPlotting {Field} field")
@@ -368,7 +371,7 @@ class Process():
                 if Species:
                     for type in Species:
                         SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                        cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den_to_plot[type][i], cmap=self.cmaps.batlow_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
+                        cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den_to_plot[type][i], cmap=self.cmaps.batlow_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=d_max[type]/1e10 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
                         if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg):
                             cbar=fig.colorbar(cax, aspect=50)
                             cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
@@ -394,7 +397,7 @@ class Process():
                     for type in Species:
                         SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                         ax.plot(axis[type]['x'], den_to_plot[type][i], label=f"{type}")
-                    ax.set(ylim=(1e-1 if CBMin is None else CBMin, self.np.max(den_to_plot[type]) if CBMax is None else CBMax), ylabel='N [$N_c$]', yscale='log',
+                    ax.set(ylim=(d_max[type]/1e10 if CBMin is None else CBMin, d_max[type] if CBMax is None else CBMax), ylabel='N [$N_c$]', yscale='log',
                            xlim=(self.np.min(axis[type]['x']), self.np.max(axis[type]['x'])))
             if Species: ax.set_title(f"{axis[type]['Time'][i]}fs")
             else: ax.set_title(f"{E_axis['Time'][i]}fs")
@@ -438,13 +441,17 @@ class Process():
             label[type] = type
         
         print(f"\nPlotting {Species} spectra")
+        x_max={type:0 for type in Species}
+        y_max={type:0 for type in Species}
         for type in Species:
             dfs = []
             for i in range(self.TimeSteps.size):
                 if ProsData:
                     spect_to_plot[type][i] = MovingAverage(spect_to_plot[type][i], 3)
-                if self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])]) > x_max:
-                    x_max = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
+                if self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])]) > x_max[type]:
+                    x_max[type] = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
+                if self.np.max(spect_to_plot[type][i]) > y_max[type]:
+                    y_max[type] = round_up_scientific_notation(self.np.max(spect_to_plot[type][i]))
                 if SaveCSV:
                     df =self.pd.DataFrame({
                         'Time':axis[type]['Time'][i],
@@ -457,15 +464,16 @@ class Process():
                 with open(self.os.path.join(self.simulation_path, f"{type.replace(' ','_')}_energy.csv"), 'w') as file:
                     dfs.to_csv(file, index=False)
                 print(f"\n{type} energies saved in {self.simulation_path}")
-
+        
         fig, ax = self.plt.subplots(num=2,clear=True, figsize=(8,6))
         for i in range(self.TimeSteps.size):
             ax.clear()
             for type in Species:
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                 ax.plot(axis[type]['ekin'][i], spect_to_plot[type][i], label=f"{label[type]}")
-            ax.set(xlabel='E [$MeV$]', xlim=(0,x_max if XMax is None else XMax),
-                   ylabel='dNdE [arb. units]', ylim=(1e4 if YMin is None else YMin,1e11 if YMax is None else YMax), yscale='log',
+            
+            ax.set(xlabel='E [$MeV$]', xlim=(0,x_max[type] if XMax is None else XMax),
+                   ylabel='dNdE [arb. units]', ylim=(y_max[type]/1e10 if YMin is None else YMin, y_max[type] if YMax is None else YMax), yscale='log',
                    title=f"{axis[type]['Time'][i]}fs")
             ax.grid(True)
             ax.legend()
@@ -628,10 +636,10 @@ class Process():
                 cbar.set_label('dNdE [arb. units]')
                 if LasAngle is not None:
                     ax.vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
-                ax.set(xlim=(-self.np.pi/3 if YMin is None else YMin,self.np.pi/3 if YMax is None else YMax),
+                ax.set(xlim=(-self.np.pi if YMin is None else YMin,self.np.pi if YMax is None else YMax),
                         ylim=(0,EMax[0] if XMax is None else XMax[0]),
                         title=f"{label[type]}")
-                if YMax is not None and YMax > self.np.pi/2:
+                if YMax is None or YMax > self.np.pi/2:
                     ax.set_rlabel_position(90)
                 fig.suptitle(f"{axis[type]['Time'][i]}fs")
                 fig.tight_layout()
@@ -655,7 +663,7 @@ class Process():
                         cbar.set_label('dNdE [arb. units]')
                     if LasAngle is not None:
                         ax[Species.index(type)].vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
-                    ax[Species.index(type)].set(xlim=(-self.np.pi/3 if YMin is None else YMin,self.np.pi/3 if YMax is None else YMax),
+                    ax[Species.index(type)].set(xlim=(-self.np.pi if YMin is None else YMin,self.np.pi if YMax is None else YMax),
                                                 ylim=(0,EMax[Species.index(type)] if XMax is None else (XMax[0] if len(XMax) ==1 else XMax[Species.index(type)])),
                                                 title=f"{label[type]}")
             
@@ -932,7 +940,7 @@ class Process():
             ax.set_title('Energy Derivative')
             fig.tight_layout()
             self.plt.savefig(self.pros_path + '/' + Derv_SaveFile + '.png',dpi=200)
-        print(f"\nDensities over time saved in {self.raw_path}")
+        print(f"\nDensities over time saved in {self.pros_path}")
 
     def Y0(self, Species=None, E=None, Field=None, FSpot=0, FMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None):
         if Species is None and E is None:

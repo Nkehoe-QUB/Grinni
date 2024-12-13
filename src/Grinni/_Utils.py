@@ -99,3 +99,16 @@ def MovingAverage(x, n):
     tmp = np.full(n, np.nan)
     x = np.concatenate((tmp, x, tmp))
     return x
+
+def round_up_scientific_notation(number):
+    import math
+    # Decompose number into mantissa (a) and exponent (b)
+    exponent = math.floor(math.log10(abs(number)))
+    mantissa = number / (10 ** exponent)
+    
+    # Round mantissa up
+    rounded_mantissa = math.ceil(mantissa)
+    
+    # Reconstruct the number
+    rounded_number = rounded_mantissa * (10 ** exponent)
+    return float(rounded_number)
