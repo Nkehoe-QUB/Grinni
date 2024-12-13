@@ -448,10 +448,10 @@ class Process():
             for i in range(self.TimeSteps.size):
                 if ProsData:
                     spect_to_plot[type][i] = MovingAverage(spect_to_plot[type][i], 3)
-                if self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])]) > x_max[type]:
-                    x_max[type] = self.np.max(axis[type]['ekin'][i][~self.np.isnan(axis[type]['ekin'][i])])
-                if self.np.max(spect_to_plot[type][i]) > y_max[type]:
-                    y_max[type] = round_up_scientific_notation(self.np.max(spect_to_plot[type][i]))
+                if self.np.nanmax(axis[type]['ekin'][i]) > x_max[type]:
+                    x_max[type] = self.np.nanmax(axis[type]['ekin'][i])
+                if self.np.nanmax(spect_to_plot[type][i]) > y_max[type]:
+                    y_max[type] = round_up_scientific_notation(self.np.nanmax(spect_to_plot[type][i]))
                 if SaveCSV:
                     df =self.pd.DataFrame({
                         'Time':axis[type]['Time'][i],
