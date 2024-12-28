@@ -29,6 +29,7 @@ class Process():
         import matplotlib.colors as colors
         import matplotlib.gridspec as gridspec
         import pandas as pd
+        import pyfiglet
         self.pd = pd
         self.os=os
         self.happi = happi
@@ -43,11 +44,14 @@ class Process():
         self.cm = colors
         self.gs = gridspec
         self.re = re
+        self.pyfiglet = pyfiglet
         self.SimName = SimName
         self.SimulationPath = self.os.path.abspath(self.SimName)
         self.Log = Log
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
+        ascii_banner = self.pyfiglet.figlet_format("Grinni")
+        print(f"\033[1;34m{ascii_banner}\033[0m")
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
