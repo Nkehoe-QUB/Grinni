@@ -8,3 +8,4 @@ h5py==3.10.0
 hatchling==1.25.0
 Pint==0.24.3
 bayesian-optimization==1.5.1
+pyfiglet==1.0.2

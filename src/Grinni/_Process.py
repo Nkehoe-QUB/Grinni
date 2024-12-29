@@ -51,7 +51,7 @@ class Process():
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
         ascii_banner = self.pyfiglet.figlet_format("Grinni")
-        print(f"\033[1;34m{ascii_banner}\033[0m")
+        print(f"\t\t\033[1;34m{ascii_banner}\033[0m")
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
