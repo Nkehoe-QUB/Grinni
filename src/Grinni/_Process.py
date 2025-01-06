@@ -202,7 +202,10 @@ class Process():
             raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
         # Check if Name is a valid diagnostic
         if Name not in self.Simulation.getDiags(Diag)[1]:
-            raise ValueError(f"Name {Name} is not a valid diagnostic")
+            if self.Geo=="Cyl":
+                if Name not in self.Simulation.getDiags("Probes")[1]:
+                    raise ValueError(f"Name {Name} is not a valid diagnostic")
+            else: raise ValueError(f"Name {Name} is not a valid diagnostic")
         # Check if units is a list of strings
         if units is not None:
             if not (isinstance(units, list) and all(isinstance(unit, str) for unit in units)):
@@ -231,13 +234,11 @@ class Process():
                 if units is None:
                     try: MetaData = self.Simulation.Probe(Name, Field)
                     except Exception: 
-                        try: MetaData = self.Simulation.Probe('instant2 fields', Field)
-                        except Exception: raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
+                        raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
                 elif units is not None:
                     try: MetaData = self.Simulation.Probe(Name, Field, units=units)
                     except Exception:
-                        try: MetaData = self.Simulation.Probe('instant2 fields', Field, units=units)
-                        except Exception: raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
+                        raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
             elif self.Geo == "Car":
                 if units is None:
                     MetaData = self.Simulation.Field(Name, Field)
