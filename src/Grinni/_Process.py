@@ -29,6 +29,7 @@ class Process():
         import matplotlib.colors as colors
         import matplotlib.gridspec as gridspec
         import pandas as pd
+        import pyfiglet
         self.pd = pd
         self.os=os
         self.happi = happi
@@ -43,15 +44,20 @@ class Process():
         self.cm = colors
         self.gs = gridspec
         self.re = re
+        self.pyfiglet = pyfiglet
         self.SimName = SimName
         self.SimulationPath = self.os.path.abspath(self.SimName)
         self.Log = Log
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
+        Message = ""
+        if not self.Log: print('\033[1;31mMessage printing surpressed.\033[0m')
+        ascii_banner = self.pyfiglet.figlet_format("Grinni")
+        if self.Log: print(f"\033[1;34m{ascii_banner}\033[0m")
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
-        else: print(f"\nSimulation \033[1;32m{self.SimulationPath}\033[0m loaded")
+        else: Message += f"Simulation \033[1;32m{self.SimulationPath}\033[0m loaded"
         file_path = f'{self.SimulationPath}/smilei.py'
         with open(file_path, 'r') as file:
             l_found=False
@@ -88,7 +94,7 @@ class Process():
         self.Box = {}
         self.Res = {}
         self.Area = 1.
-        Message = '\nGeometry: '
+        Message += '\nGeometry: '
         AreaText = ''
         self.Box['x'] = float(self.Simulation.namelist.Main.grid_length[0])*self.L_r
         self.Res['x'] = float(self.Simulation.namelist.Main.cell_length[0])*self.L_r
@@ -116,7 +122,6 @@ class Process():
             AreaText = AreaText + 'x' + str(self.np.round(self.Box['r']/self.micro, 2)) + ' (Cylindrical)'
             self.Area = (self.Box['x']/self.micro) * ((self.Box['r']/self.micro)**2)
         Message += f'\nBox size is \033[1;33m{AreaText}\033[0m micrometers'
-        print(Message)
         self.t0=((self.x_spot/self.c)+((2*self.Tau)/(2*self.np.sqrt(self.np.log(2)))))/self.femto
         if Ped is not None: 
             print("\nAdding Ped to t0")
@@ -127,11 +132,12 @@ class Process():
         self.raw_path = self.os.path.join(self.SimulationPath,  "Raw")
         if not(self.os.path.exists(self.raw_path) and self.os.path.isdir(self.raw_path)):
             self.os.mkdir(self.raw_path)
-        print(f"\nGraphs will be saved in \033[1;32m{self.raw_path}\033[0m")
+        Message += f"\nGraphs will be saved in \033[1;32m{self.raw_path}\033[0m"
         self.pros_path = self.os.path.join(self.SimulationPath, "Processed")
         if not(self.os.path.exists(self.pros_path) and self.os.path.isdir(self.pros_path)):
             self.os.mkdir(self.pros_path)
-        print(f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m")
+        Message += f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m"
+        if self.Log: print(Message)
         # Message = '\nGeometry: ' + ('Cartesian' if self.Geo=='Car' else 'Cylindrical') + '\t\tDimensions: ' + str(self.Dim) + '\n\n' + f'Box size is \033[1;33m{areaText}\033[0m micrometers\n'
 
 
@@ -272,7 +278,7 @@ class Process():
             if len(axis_data)==0:
                     continue
             elif axis_name == "x":
-                axis_data = axis_data - x_offset if x_offset is not None else axis_data  
+                axis_data = axis_data - x_offset if x_offset is not None else axis_data - (self.x_spot/self.micro)
             elif axis_name == "y":
                 if self.Geo == "Car":
                     axis_data = axis_data - y_offset if y_offset is not None else axis_data - ((self.Box['y']/self.micro)/2)
