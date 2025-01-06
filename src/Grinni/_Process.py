@@ -50,13 +50,14 @@ class Process():
         self.Log = Log
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
-        if not self.Log: print('\033[1;33mMessage printing surpressed.\033[0m')
+        Message = ""
+        if not self.Log: print('\033[1;31mMessage printing surpressed.\033[0m')
         ascii_banner = self.pyfiglet.figlet_format("Grinni")
         if self.Log: print(f"\033[1;34m{ascii_banner}\033[0m")
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
-        else: print(f"\nSimulation \033[1;32m{self.SimulationPath}\033[0m loaded")
+        else: Message += f"Simulation \033[1;32m{self.SimulationPath}\033[0m loaded"
         file_path = f'{self.SimulationPath}/smilei.py'
         with open(file_path, 'r') as file:
             l_found=False
@@ -93,7 +94,7 @@ class Process():
         self.Box = {}
         self.Res = {}
         self.Area = 1.
-        Message = '\nGeometry: '
+        Message += '\nGeometry: '
         AreaText = ''
         self.Box['x'] = float(self.Simulation.namelist.Main.grid_length[0])*self.L_r
         self.Res['x'] = float(self.Simulation.namelist.Main.cell_length[0])*self.L_r
