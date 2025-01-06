@@ -277,7 +277,7 @@ class Process():
             if len(axis_data)==0:
                     continue
             elif axis_name == "x":
-                axis_data = axis_data - x_offset if x_offset is not None else axis_data  
+                axis_data = axis_data - x_offset if x_offset is not None else axis_data - (self.x_spot/self.micro)
             elif axis_name == "y":
                 if self.Geo == "Car":
                     axis_data = axis_data - y_offset if y_offset is not None else axis_data - ((self.Box['y']/self.micro)/2)
