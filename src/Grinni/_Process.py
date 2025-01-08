@@ -363,6 +363,7 @@ class Process():
         else: print(f"\nPlotting {Field} field")
         FinalFile = self.TimeSteps.size
         fig, ax = self.plt.subplots(num=1,clear=True, figsize=(8,6))
+        Plotted = False
         for i in range(self.TimeSteps.size):
             ax.clear()
             if self.Dim > 1:
@@ -372,17 +373,18 @@ class Process():
                     except IndexError: 
                         FinalFile = i
                         continue
-                    else:
+                    
+                    if not Plotted:
                         cbar1 = fig.colorbar(cax1, aspect=50)
                         cbar1.set_label(f"{Field} [{FUnit}]")
                 if Species:
                     for type in Species:
                         SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                         cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den_to_plot[type][i], cmap=self.cmaps.batlow_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=d_max[type]/1e10 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
-                        if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg):
+                        if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg) and not Plotted:
                             cbar=fig.colorbar(cax, aspect=50)
                             cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
-                    if (Colours is None) or (len(Colours) == 1):
+                    if (Colours is None) or (len(Colours) == 1) and not Plotted:
                         cbar=fig.colorbar(cax, aspect=50)
                         cbar.set_label('N [$N_c$]')
                 ax.set_ylabel(r'y [$\mu$m]')
@@ -413,11 +415,12 @@ class Process():
             fig.tight_layout()
             if not Species: SaveFile=TempFile if File is not None else f"{Field}_" + TempFile
             self.plt.savefig(self.raw_path + "/" + SaveFile + "_" + str(i) + ".png",dpi=200)
-            if self.Dim > 1:
-                if E_las or E_avg:
-                    cbar1.remove()
-                if Species:
-                    cbar.remove()
+            Plotted = True
+            # if self.Dim > 1:
+            #     if E_las or E_avg:
+            #         cbar1.remove()
+            #     if Species:
+            #         cbar.remove()
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
         print(f"\nDensities saved in {self.raw_path}")
