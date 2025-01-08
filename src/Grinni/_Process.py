@@ -384,7 +384,7 @@ class Process():
                         if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg) and not Plotted:
                             cbar=fig.colorbar(cax, aspect=50)
                             cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
-                    if (Colours is None) or (len(Colours) == 1) and not Plotted:
+                    if ((Colours is None) or (len(Colours) == 1)) and not Plotted:
                         cbar=fig.colorbar(cax, aspect=50)
                         cbar.set_label('N [$N_c$]')
                 ax.set_ylabel(r'y [$\mu$m]')
