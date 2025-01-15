@@ -428,7 +428,7 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, 0, FinalFile, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
             
-    def SpectraPlot(self, Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True, SaveCSV=False):
+    def SpectraPlot(self, Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True, SaveCSV=False, NoGrid=False):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -485,7 +485,7 @@ class Process():
             ax.set(xlabel='E [$MeV$]', xlim=(0,x_max[type] if XMax is None else XMax),
                    ylabel='dNdE [arb. units]', ylim=(y_max[type]/1e10 if YMin is None else YMin, y_max[type] if YMax is None else YMax), yscale='log',
                    title=f"{axis[type]['Time'][i]}fs")
-            ax.grid(True)
+            if not NoGrid: ax.grid(True)
             ax.legend()
             fig.tight_layout()
             self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
@@ -688,7 +688,7 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, InitalFile, self.TimeSteps.size, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
 
-    def AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False):
+    def AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False, NoGrid=False):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -769,7 +769,7 @@ class Process():
                     ax.set(ylabel='dnde [arb. units]', ylim=(1e4 if YMin is None else YMin, 1e10 if YMax is None else YMax), yscale='log',
                            xlabel='Energy [MeV/u]', xlim=(0,EMax[Species.index(type)]),
                            title=f"{axis[type]['Time'][i]}fs")
-                    ax.grid(True)
+                    if not NoGrid: ax.grid(True)
                     ax.legend()
                     fig.tight_layout()
                     self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
@@ -1201,7 +1201,7 @@ Available functions:
               
         - AnglePlot(Species=[], CBMin=None, CBMax=None, XMax=None, YMin=None, YMax=None, LasAngle=None, File=None, SaveCSV=False)
               
-        - AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False)
+        - AngleEnergyPlot(Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False, NoGrid=False)
               
         - CDSurfacePlot(F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, HiRes=False, File=None)
               
@@ -1217,7 +1217,7 @@ Available functions:
 
         - PhaseSpacePlot(Species=[], Phase=None, CBMin=None, CBMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None)
               
-        - SpectraPlot(Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True, SaveCSV=False)
+        - SpectraPlot(Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True, SaveCSV=False, NoGrid=False)
               
         - TempPlot(Species=None, Test=False, XMin=None, XMax=None, File=None)
               
