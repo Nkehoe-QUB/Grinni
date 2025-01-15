@@ -50,14 +50,14 @@ class Process():
         self.Log = Log
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
-        Message = ""
+        Message = "Use \033[1;33mHelp()\033[0m to see available functions."
         if not self.Log: print('\033[1;31mMessage printing surpressed.\033[0m')
         ascii_banner = self.pyfiglet.figlet_format("Grinni")
         if self.Log: print(f"\033[1;34m{ascii_banner}\033[0m")
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
-        else: Message += f"Simulation \033[1;32m{self.SimulationPath}\033[0m loaded"
+        else: Message += f"\nSimulation \033[1;32m{self.SimulationPath}\033[0m loaded"
         file_path = f'{self.SimulationPath}/smilei.py'
         with open(file_path, 'r') as file:
             l_found=False
@@ -1197,11 +1197,11 @@ class Process():
     def Help(self):
         print(f"""\n
 Available functions:
-        - _init__(SimName=".", x_spot=0, Tau=0, Ped=None, Dim=2, Log=True, Movie=True)
+        - __init__(SimName=".", Ped=None, Log=True, Movie=True)
               
-        - AnglePlot(Species=[], CBMin=None, CBMax=None, XMax=None, LasAngle=None, File=None)
+        - AnglePlot(Species=[], CBMin=None, CBMax=None, XMax=None, YMin=None, YMax=None, LasAngle=None, File=None, SaveCSV=False)
               
-        - AngleEnergyPlot(Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None)
+        - AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False)
               
         - CDSurfacePlot(F_Spot=0, CBMin=None, CBMax=None, XMin=None, XMax=None, tMax=None, HiRes=False, File=None)
               
@@ -1213,9 +1213,11 @@ Available functions:
 
         - HiResPlot(Species=[], CBMin=None, CBMax=None, File=None)
 
+        - LasIonFrontPlot(FSpot=1.0, EFilter=5.e-1, EMax=None, XMin=None, XMax=None, File=None)
+
         - PhaseSpacePlot(Species=[], Phase=None, CBMin=None, CBMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None)
               
-        - SpectraPlot(Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True)
+        - SpectraPlot(Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True, SaveCSV=False)
               
         - TempPlot(Species=None, Test=False, XMin=None, XMax=None, File=None)
               
