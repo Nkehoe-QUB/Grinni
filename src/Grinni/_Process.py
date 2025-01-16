@@ -48,15 +48,15 @@ class Process():
         self.cm = colors
         self.gs = gridspec
         self.re = re
-        if Title: 
-            self.pyfiglet = pyfiglet
-            ascii_banner = self.pyfiglet.figlet_format("Grinni")
-            if self.Log: print(f"\033[1;34m{ascii_banner}\033[0m")
         self.SimName = SimName
         self.SimulationPath = self.os.path.abspath(self.SimName)
         self.Log = Log
         self.Movie = Movie
         self.Units = ["um", "fs", "MeV", "V/m", "kg*m/s", 'um^-3*MeV^-1', 'm^-3*kg^-1*(m/s)^-1', 'T']
+        if Title: 
+            self.pyfiglet = pyfiglet
+            ascii_banner = self.pyfiglet.figlet_format("Grinni")
+            if self.Log: print(f"\033[1;34m{ascii_banner}\033[0m")
         Message = "Use \033[1;33mHelp()\033[0m to see available functions."
         if not self.Log: print('\033[1;31mMessage printing surpressed.\033[0m')
         
