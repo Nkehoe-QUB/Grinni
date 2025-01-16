@@ -723,7 +723,6 @@ class Process():
             if DataOnly:
                 if len(Species) > 1 or len(Angles) > 1:
                     raise ValueError("DataOnly is only available for a single species and angle")
-                AxisOut = {}
                 Data_out = {}
                 for i in range(self.TimeSteps.size):
                     Eng_Den = self.np.swapaxes(angle_to_plot[type][i], 0, 1)
@@ -738,9 +737,8 @@ class Process():
                         else:
                             A_arg = self.np.argwhere(abs(axis[type]['user_function0']-self.np.radians(AngleOffset))<=self.np.radians(j))
                             A_energies = self.np.reshape(self.np.sum(Eng_Den[:,A_arg],axis=1),Eng_Den.shape[0])
-                        AxisOut[i] = axis[type]["ekin"][i]
                         Data_out[i] = A_energies
-                return AxisOut, Data_out
+                return Data_out, axis[type]
             elif not DataOnly:
                 print(f"\nPlotting {type} angle energies")
                 for i in range(self.TimeSteps.size):
