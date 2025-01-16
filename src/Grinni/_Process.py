@@ -361,7 +361,7 @@ class Process():
                     den_to_plot[type] = self.np.array(elec_den) / ((self.np.array(en_den) / self.np.array(elec_den)) + 1)
                     continue
                 den_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=self.x_spot)
-                den_to_plot[type] = self.np.swapaxes(den_to_plot[type], 1,2)
+                if self.Dim > 1: den_to_plot[type] = self.np.swapaxes(den_to_plot[type], 1,2)
                 if self.np.max(den_to_plot[type]) > d_max[type]:
                     d_max[type] = round_up_scientific_notation(self.np.max(den_to_plot[type]))
         
