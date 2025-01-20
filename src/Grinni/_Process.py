@@ -362,8 +362,7 @@ class Process():
                     continue
                 den_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=self.x_spot)
                 if self.Dim > 1: den_to_plot[type] = self.np.swapaxes(den_to_plot[type], 1,2)
-                if self.np.max(den_to_plot[type]) > d_max[type]:
-                    d_max[type] = round_up_scientific_notation(self.np.max(den_to_plot[type]))
+                d_max[type] = round_up_scientific_notation(self.np.max(den_to_plot[type]))
         
         if Species: print(f"\nPlotting {Species} densities")
         else: print(f"\nPlotting {Field} field")
@@ -381,17 +380,17 @@ class Process():
                         continue
                     
                     if not Plotted:
-                        cbar1 = fig.colorbar(cax1, aspect=50)
+                        cbar1 = fig.colorbar(cax1, aspect=50, location='left')
                         cbar1.set_label(f"{Field} [{FUnit}]")
                 if Species:
                     for type in Species:
                         SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                        cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den_to_plot[type][i], cmap=self.cmaps.batlow_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=d_max[type]/1e10 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
+                        cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den_to_plot[type][i], cmap=self.cmaps.batlowW_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=d_max[type]/1e6 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
                         if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg) and not Plotted:
-                            cbar=fig.colorbar(cax, aspect=50)
+                            cbar=fig.colorbar(cax, aspect=50, location='right')
                             cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
                     if ((Colours is None) or (len(Colours) == 1)) and not Plotted:
-                        cbar=fig.colorbar(cax, aspect=50)
+                        cbar=fig.colorbar(cax, aspect=50, location='right')
                         cbar.set_label('N [$N_c$]')
                 ax.set_ylabel(r'y [$\mu$m]')
             elif self.Dim == 1:
@@ -513,6 +512,7 @@ class Process():
         phase_to_plot={}
         axis={}
         label={}
+        d_max={type:0 for type in Species}
         TempFile=File if File is not None else f"{Phase}_phase"
         for type in Species:
             Diag=type + ' ' + Phase + ' phase space'
@@ -521,6 +521,7 @@ class Process():
             phase_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=self.x_spot)
             phase_to_plot[type] = self.np.swapaxes(phase_to_plot[type], 1, 2)
             label[type] = type
+            d_max[type] = round_up_scientific_notation(self.np.max(phase_to_plot[type]))
         
         print(f"\nPlotting {Species} phase spaces")
         Phase = Phase.split('-')
@@ -551,7 +552,7 @@ class Process():
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
                 X = axis[type][Phase[0]] if Phase[0] not in ["px" or "py"] else axis[type][Phase[0]][i]
                 Y = axis[type][Phase[1]][i]
-                try: cax = ax.pcolormesh(X, Y, phase_to_plot[type][i], cmap=self.cmaps.batlow_r, norm=self.cm.LogNorm(vmin=1e2 if CBMin is None else CBMin, vmax=1e10 if CBMax is None else CBMax))
+                try: cax = ax.pcolormesh(X, Y, phase_to_plot[type][i], cmap=self.cmaps.batlowW_r, norm=self.cm.LogNorm(vmin=d_max[type]/1e6 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
                 except ValueError: 
                     InitialFile+=1
                     continue
@@ -643,7 +644,7 @@ class Process():
             for i in range(self.TimeSteps.size):
                 ax.clear()
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                try: cax = ax.pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angle_to_plot[type][i], cmap=self.cmaps.batlow_r, norm=self.cm.LogNorm(vmin=1e4 if CBMin is None else CBMin, vmax=1e10 if CBMax is None else CBMax))
+                try: cax = ax.pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angle_to_plot[type][i], cmap=self.cmaps.batlowW_r, norm=self.cm.LogNorm(vmin=1e4 if CBMin is None else CBMin, vmax=1e10 if CBMax is None else CBMax))
                 except ValueError: 
                     InitalFile+=1
                     print(f"Skipping {axis[type]['Time'][i]}fs")
@@ -669,7 +670,7 @@ class Process():
                 for a in ax: a.clear()
                 for type in Species:
                     SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                    try: cax = ax[Species.index(type)].pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angle_to_plot[type][i], cmap=self.cmaps.batlow_r, norm=self.cm.LogNorm(vmin=1e4 if CBMin is None else CBMin, vmax=1e10 if CBMax is None else CBMax))
+                    try: cax = ax[Species.index(type)].pcolormesh(axis[type]['user_function0'],axis[type]['ekin'][i], angle_to_plot[type][i], cmap=self.cmaps.batlowW_r, norm=self.cm.LogNorm(vmin=1e4 if CBMin is None else CBMin, vmax=1e10 if CBMax is None else CBMax))
                     except ValueError:
                         if type == Species[0]: 
                             InitalFile+=1
@@ -876,7 +877,7 @@ class Process():
 
         print(f"\nPlotting relativistic critical density surface")
         den = self.np.swapaxes(DenTime, 0, 1)
-        cax=ax2.pcolormesh(axis["x"],axis["Time"],den, cmap=self.cmaps.batlow_r, norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
+        cax=ax2.pcolormesh(axis["x"],axis["Time"],den, cmap=self.cmaps.batlowW_r, norm=self.cm.LogNorm(vmin=1e-2 if CBMin is None else CBMin, vmax=1e3 if CBMax is None else CBMax))
         ax2.plot(CD_Surf,axis["Time"], 'k--', label=r'$\gamma$ N$_c$')
         if Trans:
             ax2.arrow(-1. if XMin is None else XMin, TTrans, 0.5 if XMin is None else abs(XMin)/2, 0, head_width=4, head_length=0.1 if XMin is None else abs(XMin)/10, ec='r', ls='--', label=f"Trans @ {TTrans}fs")
@@ -1106,7 +1107,7 @@ class Process():
             self.plt.savefig(self.pros_path + '/' + SaveFile + '.png',dpi=200)
 
     def LasIonFrontPlot(self, FSpot=1.0, EFilter=5.e-1, EMax=None, XMin=None, XMax=None, File=None):
-        SaveFile=File if File is not None else "las_ion_front"
+        SaveFile=File if File is not None else "Las_Ion_Front"
         data = {}
         axis = {}
         print(f"\nGetting data")
@@ -1169,7 +1170,7 @@ class Process():
             ax2=ax[1].twinx()
             ax[1].plot(axis['electron']['x'], self.np.mean(data['electron'][t][:, y_args], axis=1), color='blue')
             ax2.plot(axis['ey']['x'], self.np.mean(data['ey'][t][:, Ey_arg], axis=1), color='red')
-            ax[2].pcolormesh(axis['proton']['x'], axis['proton']['ekin'][t], data['proton'][t].T, norm=self.cm.LogNorm(), cmap=self.cmaps.batlow_r)
+            ax[2].pcolormesh(axis['proton']['x'], axis['proton']['ekin'][t], data['proton'][t].T, norm=self.cm.LogNorm(vmin=round_up_scientific_notation(self.np.max(data['proton']))/1e6, vmax=round_up_scientific_notation(self.np.max(data['proton']))), cmap=self.cmaps.batlowW_r)
             ax[0].set(ylabel='y [$\\mu$m]')
             ax[1].set(yscale='log', ylim=(1e-2, 5e1), ylabel='N$_e$ [N$_c$]')
             ax[2].set(ylim=(0, self.np.max(axis['proton']['ekin'])), ylabel='E [MeV]',
