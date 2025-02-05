@@ -57,13 +57,13 @@ class Process():
             self.pyfiglet = pyfiglet
             ascii_banner = self.pyfiglet.figlet_format("Grinni")
             if self.Log: print(f"\033[1;34m{ascii_banner}\033[0m")
-        Message = "Use \033[1;33mHelp()\033[0m to see available functions."
+        Message = "Use \033[1;33mHelp()\033[0m to see available functions.\n"
         if not self.Log: print('\033[1;31mMessage printing surpressed.\033[0m')
         
         self.Simulation = self.happi.Open(self.SimulationPath, verbose=False)
         if self.Simulation == "Invalid Smilei simulation":
             raise ValueError(f"\033[1;31mSimulation \033[1;33m{self.SimulationPath}\033[0m does not exist\033[0m")
-        else: Message += f"\nSimulation \033[1;32m{self.SimulationPath}\033[0m loaded"
+        else: Message += f"\nSimulation \033[1;32m{self.SimulationPath}\033[0m loaded\n"
         file_path = f'{self.SimulationPath}/smilei.py'
         with open(file_path, 'r') as file:
             l_found=False
@@ -120,14 +120,15 @@ class Process():
                 AreaText = AreaText + 'x' + str(self.np.round(self.Box['z']/self.micro, 2))
             for i in self.Box.keys(): self.Area *= self.Box[i]/self.micro
         elif "cylindrical" in self.Simulation.namelist.Main.geometry:
-            Message += 'Cylindrical\t\tDimensions: 3\n'
             self.Geo = "Cyl"
             self.Dim = 3
+            self.Modes = int(self.Simulation.namelist.Main.number_of_AM)
+            Message += f'Cylindrical\t\tDimensions: 3\tModes: {self.Modes}\n'
             self.Box['r'] = float(self.Simulation.namelist.Main.grid_length[1])*self.L_r
             self.Res['r'] = float(self.Simulation.namelist.Main.cell_length[1])*self.L_r
-            AreaText = AreaText + 'x' + str(self.np.round(self.Box['r']/self.micro, 2)) + ' (Cylindrical)'
+            AreaText = AreaText + 'x' + str(self.np.round(self.Box['r']/self.micro, 2))
             self.Area = (self.Box['x']/self.micro) * ((self.Box['r']/self.micro)**2)
-        Message += f'\nBox size is \033[1;33m{AreaText}\033[0m micrometers'
+        Message += f'\nBox size is \033[1;33m{AreaText}\033[0m micrometers\n'
         self.t0=((self.x_spot/self.c)+((2*self.Tau)/(2*self.np.sqrt(self.np.log(2)))))/self.femto
         if Ped is not None: 
             print("\nAdding Ped to t0")
@@ -142,73 +143,10 @@ class Process():
         self.pros_path = self.os.path.join(self.SimulationPath, "Processed")
         if not(self.os.path.exists(self.pros_path) and self.os.path.isdir(self.pros_path)):
             self.os.mkdir(self.pros_path)
-        Message += f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m"
+        Message += f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m\n"
         if self.Log: print(Message)
-        # Message = '\nGeometry: ' + ('Cartesian' if self.Geo=='Car' else 'Cylindrical') + '\t\tDimensions: ' + str(self.Dim) + '\n\n' + f'Box size is \033[1;33m{areaText}\033[0m micrometers\n'
 
-
-
-        # self.x_spot = x_spot
-        # self.Geo = Geo
-        # if self.Geo not in ['Car', 'Cyl']:
-        #     raise ValueError(f"\033[1;31mIncorrect geometry given: {self.Geo}\nMust be 'Car' or 'Cyl'\033[0m")
-        # self.Dim = Dim if self.Geo=='Car' else 3
-        
-        # self.area = None
-        # areaText=''
-        # with open(file_path, 'r') as file:
-        #     for line in file:
-        #         xmatch = re.search(r'box_x\s*=\s*(\d+).\s*\*\s*micro', line)
-        #         if xmatch is None: re.search(r'box_x\s*=\s*(\d+)\s*\*\s*micro', line)
-        #         if xmatch:
-        #             self.box_x = float(xmatch.group(1))
-        #             self.area = self.box_x
-        #             areaText = str(xmatch.group(1))
-        #             break
-        #     if xmatch is None:
-        #             raise ValueError("\033[1;31mbox_x not found in simulation file\033[0m")
-        #     if self.Dim>1:
-        #         for line in file:
-        #             if self.Geo=="Car":
-        #                 ymatch = re.search(r'box_y\s*=\s*(\d+).\s*\*\s*micro', line)
-        #                 if ymatch is None: re.search(r'box_y\s*=\s*(\d+)\s*\*\s*micro', line)
-        #                 if ymatch:
-        #                     self.box_y = float(ymatch.group(1))
-        #                     self.area = self.area * self.box_y
-        #                     areaText = areaText + 'x' + str(self.box_y)
-        #                     break
-        #             elif self.Geo=="Cyl":
-        #                 rmatch = re.search(r'box_r\s*=\s*(\d+).\s*\*\s*micro', line)
-        #                 if rmatch is None: re.search(r'box_r\s*=\s*(\d+)\s*\*\s*micro', line)
-        #                 if rmatch:
-        #                     self.box_r = float(rmatch.group(1))
-        #                     self.area = self.area * (self.box_r ** 2)
-        #                     areaText = areaText + 'x' + str(self.box_r) + ' (Cylindrical)'
-        #                     break
-        #         if self.Geo=="Car" and ymatch is None:
-        #             raise ValueError("\033[1;31mbox_y not found in simulation file\033[0m")
-        #         elif self.Geo=="Cyl" and rmatch is None:
-        #             raise ValueError("\033[1;31mbox_r not found in simulation file\033[0m")
-            
-        
-        
-        # if x_spot == 0 or Tau == 0:
-        #     raise ValueError("\033[1;31mNo spot size or simulation size or Tau value was provided\033[0m")
-        # self.x_spot = x_spot 
-        # if self.x_spot > 1:
-        #     print("\nx_spot is in meters, converting to micrometers")
-        #     self.x_spot = self.x_spot*self.micro
-        # self.Tau = Tau
-        # if self.Tau > 1:
-        #     print("\nTau is in seconds, converting to femtoseconds")
-        #     self.Tau = self.Tau*self.femto
-        
-        
-    
-    # def moving_average(self, x, w):
-    #     return self.np.convolve(x, self.np.ones(w), 'valid') / w
-
-    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None):
+    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None, dT=5):
         # Check if Diag is a valid diagnostic
         if not self.Simulation.getDiags(Diag):
             raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
@@ -266,6 +204,13 @@ class Process():
                 print(f"\n\033[1;31m{Name} is 3 dimensional\033[0m\nAveraging over z")
         self.TimeSteps = self.np.array(MetaData.getTimesteps())
         if Diag == "Fields":
+            if self.Geo == "Cyl" and Name == "average fields":
+                print('\n\033[1;31mAveraging fields over time\033[0m')
+                new_size = (Values.shape[0] // 10) * 10  # Make it a multiple of 10
+                Values = Values[:new_size]
+                self.TimeSteps = self.TimeSteps[:new_size]
+                self.TimeSteps = self.TimeSteps[::10]
+                Values = Values.reshape(-1, 10, Values.shape[1], Values.shape[2]).mean(axis=1)
             self.max_number = float('-inf')  # Initialize max_number to negative infinity
             for array in Values:
                 current_max = self.np.max(array)
@@ -273,6 +218,20 @@ class Process():
                     self.max_number = current_max
         axis ={}
         axis["Time"] = self.np.round(MetaData.getTimes()-self.t0,2)
+        if Diag == "Fields":
+            if self.Geo == "Cyl" and Name == "average fields":
+                axis["Time"] = axis["Time"][:new_size]
+                axis["Time"] = axis["Time"][::10]
+                arg=1
+                while axis["Time"][arg] - axis["Time"][0] < dT:
+                    arg += 1
+                truncate_size = (axis["Time"].shape[0] // arg) * 10  # Make it a multiple of arg
+                axis["Time"] = axis["Time"][:truncate_size]  # Slice to truncate
+                self.TimeSteps = self.TimeSteps[:truncate_size]
+                Values = Values[:truncate_size]  # Slice to truncate
+                axis["Time"] = axis["Time"][::arg]
+                self.TimeSteps = self.TimeSteps[::arg]
+                Values = Values[::arg]
         bin_size = None
         for axis_name in axis_names:
             if self.Geo == "Cyl" and Diag == "Fields" and axis_name == "x":
@@ -316,6 +275,10 @@ class Process():
                 axis_data = self.np.array(MetaData.getAxis('py', timestep=self.TimeSteps[0]),ndmin=2)
                 for t in self.TimeSteps[1:]:
                     axis_data = self.np.vstack((axis_data,self.np.array(MetaData.getAxis('py', timestep=t))))
+            elif axis_name == "pz":
+                axis_data = self.np.array(MetaData.getAxis('pz', timestep=self.TimeSteps[0]),ndmin=2)
+                for t in self.TimeSteps[1:]:
+                    axis_data = self.np.vstack((axis_data,self.np.array(MetaData.getAxis('pz', timestep=t))))
             axis[axis_name] = axis_data
         if Data: 
             if Axis: return Values * bin_size if bin_size is not None else Values, axis
@@ -362,7 +325,7 @@ class Process():
                     continue
                 den_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=self.x_spot)
                 if self.Dim > 1: den_to_plot[type] = self.np.swapaxes(den_to_plot[type], 1,2)
-                d_max[type] = round_up_scientific_notation(self.np.max(den_to_plot[type]))
+                d_max[type] = CBMax if CBMax is not None else round_up_scientific_notation(self.np.max(den_to_plot[type]))
         
         if Species: print(f"\nPlotting {Species} densities")
         else: print(f"\nPlotting {Field} field")
@@ -373,6 +336,10 @@ class Process():
             ax.clear()
             if self.Dim > 1:
                 if E_las or E_avg:
+                    if E_las:
+                        SaveFile=TempFile if File is not None else f"{Field}_las_" + TempFile
+                    elif E_avg:
+                        SaveFile=TempFile if File is not None else f"{Field}_avg_" + TempFile
                     FUnit = 'V/m' if 'E' in Field else 'T'
                     try: cax1=ax.pcolormesh(E_axis['x'], E_axis['y'], Ey[i], cmap=self.cmaps.vik, norm=self.cm.CenteredNorm(halfrange=self.max_number if EMax is None else EMax))
                     except IndexError: 
@@ -385,7 +352,7 @@ class Process():
                 if Species:
                     for type in Species:
                         SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                        cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den_to_plot[type][i], cmap=self.cmaps.batlowW_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=d_max[type]/1e6 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
+                        cax=ax.pcolormesh(axis[type]['x'], axis[type]['y'], den_to_plot[type][i], cmap=self.cmaps.batlowW_r if Colours is None else getattr(self.cmaps, Colours[Species.index(type)]), norm=self.cm.LogNorm(vmin=d_max[type]/1e6 if CBMin is None else CBMin, vmax=d_max[type]))
                         if (Colours is not None) and (len(Colours) > 1) and (not E_las or not E_avg) and not Plotted:
                             cbar=fig.colorbar(cax, aspect=50, location='right')
                             cbar.set_label(f"N$_{{{type}}}$ [$N_c$]")
@@ -395,6 +362,10 @@ class Process():
                 ax.set_ylabel(r'y [$\mu$m]')
             elif self.Dim == 1:
                 if E_las or E_avg:
+                    if E_las:
+                        SaveFile=TempFile if File is not None else f"{Field}_las_" + TempFile
+                    elif E_avg:
+                        SaveFile=TempFile if File is not None else f"{Field}_avg_" + TempFile
                     FUnit = 'V/m' if 'E' in Field else 'T'
                     if not Species:
                         try: ax.plot(E_axis['x'], Ey[i], label=Field)
@@ -418,14 +389,8 @@ class Process():
             ax.grid(True)
             ax.set_xlabel(r'x [$\mu$m]')
             fig.tight_layout()
-            if not Species: SaveFile=TempFile if File is not None else f"{Field}_" + TempFile
             self.plt.savefig(self.raw_path + "/" + SaveFile + "_" + str(i) + ".png",dpi=200)
             Plotted = True
-            # if self.Dim > 1:
-            #     if E_las or E_avg:
-            #         cbar1.remove()
-            #     if Species:
-            #         cbar.remove()
             if self.Log: 
                 PrintPercentage(i, self.TimeSteps.size -1 )
         print(f"\nDensities saved in {self.raw_path}")
@@ -523,55 +488,57 @@ class Process():
             label[type] = type
             d_max[type] = round_up_scientific_notation(self.np.max(phase_to_plot[type]))
         
-        print(f"\nPlotting {Species} phase spaces")
+        print(f"\nPlotting {Species} - {Phase} phase spaces")
         Phase = Phase.split('-')
         for p in range(len(Phase)):
+            if len(axis[type][Phase[p]]) < self.TimeSteps.size:
+                raise ValueError(f"Phase space {Phase[p]} does not have enough data\nData:{len(axis[type][Phase[p]])}\t Times:{self.TimeSteps.size}")
             if Phase[p] == "energy":
                 Phase[p] = "ekin"
                 break
         for type in Species:
-            max0 = 0
-            min0 = 0
+            max0 = 0 if "p" in Phase[0] else self.np.max(axis[type][Phase[0]])
+            min0 = 0 if "p" in Phase[0] else self.np.min(axis[type][Phase[0]])
             max1 = 0
             min1 = 0
             InitialFile=0
             for i in range(self.TimeSteps.size):
-                if Phase[1] == "py" :
-                    if self.np.max(axis[type]["py"][i]) > max1:
-                        max1 = self.np.max(axis[type]["py"][i])
-                    if self.np.min(axis[type]["py"][i]) < min1:
-                        min1 = self.np.min(axis[type]["py"][i])
-                else:
-                    if self.np.max(axis[type][Phase[1]][i]) > max0:
-                        max0 = self.np.max(axis[type][Phase[1]][i])
-                    if self.np.min(axis[type][Phase[1]][i]) < min0:
-                        min0 = self.np.min(axis[type][Phase[1]][i])
+                if "p" in Phase[0]:
+                    if self.np.max(axis[type][Phase[0]][i]) > max0:
+                        max0 = self.np.max(axis[type][Phase[0]][i])
+                    if self.np.min(axis[type][Phase[0]][i]) < min0:
+                        min0 = self.np.min(axis[type][Phase[0]][i])
+                if self.np.max(axis[type][Phase[1]][i]) > max1:
+                    max1 = self.np.max(axis[type][Phase[1]][i])
+                if self.np.min(axis[type][Phase[1]][i]) < min1:
+                    min1 = self.np.min(axis[type][Phase[1]][i])
             fig, ax = self.plt.subplots(num=3,clear=True, figsize=(8,6))
+            Plotted = False
             for i in range(self.TimeSteps.size):
                 ax.clear()
                 SaveFile=TempFile if File is not None else f"{type}_" + TempFile
-                X = axis[type][Phase[0]] if Phase[0] not in ["px" or "py"] else axis[type][Phase[0]][i]
+                X = axis[type][Phase[0]] if "p" not in Phase[0] else axis[type][Phase[0]][i]
                 Y = axis[type][Phase[1]][i]
-                try: cax = ax.pcolormesh(X, Y, phase_to_plot[type][i], cmap=self.cmaps.batlowW_r, norm=self.cm.LogNorm(vmin=d_max[type]/1e6 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
-                except ValueError: 
-                    InitialFile+=1
-                    continue
-                cbar = fig.colorbar(cax, aspect=50)
-                if Phase[1] == "px":
-                    ax.set(xlabel=r'x [$\mu$m]', ylabel='px [kgm/s]', ylim=(min0 if YMin is None else YMin, max0 if YMax is None else YMax))
-                    cbar.set_label('dndpx [arb. units]')
-                elif Phase[1] == "py":
-                    ax.set(ylabel='py [kgm/s]', ylim=(min1 if YMin is None else YMin, max1 if YMax is None else YMax),
-                           xlabel='px [kgm/s]', xlim=(min0 if XMin is None else XMin, max0 if XMax is None else XMax))
-                elif Phase[1] == "ekin":
-                    ax.set(ylabel='Energy [MeV]', ylim=(min0 if YMin is None else YMin, max0 if YMax is None else YMax),
-                           xlabel=r'x [$\mu$m]')
-                    cbar.set_label('dndE [arb. units]')
-                ax.set_title(f"{axis[type]['Time'][i]}fs")
+                cax = ax.pcolormesh(X, Y, phase_to_plot[type][i], cmap=self.cmaps.batlowW_r, norm=self.cm.LogNorm(vmin=d_max[type]/1e6 if CBMin is None else CBMin, vmax=d_max[type] if CBMax is None else CBMax))
+                if "p" in Phase[0]:
+                    xlabel = f"{Phase[0]} [kgm/s]"
+                else: xlabel = fr"{Phase[0]} [$\mu$m]"
+                if Phase[1] == "ekin":
+                    ylabel = "Energy [MeV]"
+                    clabel = 'dndE [arb. units]'
+                else:
+                    ylabel = f"{Phase[1]} [kgm/s]"
+                    clabel = 'dndpx [arb. units]'
+                ax.set(xlabel=xlabel, xlim=(min0 if XMin is None else XMin, max0 if XMax is None else XMax), 
+                       ylabel=ylabel, ylim=(min0 if YMin is None else YMin, max0 if YMax is None else YMax),
+                       title=f"{axis[type]['Time'][i]}fs")
+                if not Plotted:
+                    cbar = fig.colorbar(cax, aspect=50)
+                    cbar.set_label(clabel)
                 ax.grid(True)
                 fig.tight_layout()
                 self.plt.savefig(self.raw_path + '/' + SaveFile + '_' + str(i) + '.png',dpi=200)
-                cbar.remove()
+                Plotted = True
                 if self.Log: 
                     PrintPercentage(i, self.TimeSteps.size -1 )
             print(f"\nPhase spaces saved in {self.raw_path}")
