@@ -499,11 +499,11 @@ class Process():
         print(f"\nPlotting {Species} - {Phase} phase spaces")
         Phase = Phase.split('-')
         for p in range(len(Phase)):
-            if len(axis[type][Phase[p]]) < self.TimeSteps.size:
-                raise ValueError(f"Phase space {Phase[p]} does not have enough data\nData:{len(axis[type][Phase[p]])}\t Times:{self.TimeSteps.size}")
             if Phase[p] == "energy":
                 Phase[p] = "ekin"
                 break
+            if len(axis[type][Phase[p]]) < self.TimeSteps.size:
+                raise ValueError(f"Phase space {Phase[p]} does not have enough data\nData:{len(axis[type][Phase[p]])}\t Times:{self.TimeSteps.size}")
         for type in Species:
             max0 = 0 if "p" in Phase[0] else self.np.max(axis[type][Phase[0]])
             min0 = 0 if "p" in Phase[0] else self.np.min(axis[type][Phase[0]])
