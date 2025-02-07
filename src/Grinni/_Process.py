@@ -146,7 +146,7 @@ class Process():
         Message += f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m\n"
         if self.Log: print(Message)
 
-    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None, dT=5):
+    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None, theta=0, dT=5):
         # Check if Diag is a valid diagnostic
         if not self.Simulation.getDiags(Diag):
             raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
@@ -160,6 +160,8 @@ class Process():
         if units is not None:
             if not (isinstance(units, list) and all(isinstance(unit, str) for unit in units)):
                 raise TypeError("units must be a list of strings")
+        if theta > self.np.pi:
+            raise ValueError("Theta must be in radians and between 0 and pi")
         
         # Get the data
         if x_offset is None:
@@ -182,13 +184,9 @@ class Process():
         elif Diag == "Fields":
             if self.Geo == "Cyl":
                 if units is None:
-                    try: MetaData = self.Simulation.Probe(Name, Field)
-                    except Exception: 
-                        raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
+                    MetaData = self.Simulation.Field(Name, 'Er', theta=theta)
                 elif units is not None:
-                    try: MetaData = self.Simulation.Probe(Name, Field, units=units)
-                    except Exception:
-                        raise ValueError(f"Field '{Field}' is not a valid field\nNeed Probe to get field data in cylindrical geometry")
+                    MetaData = self.Simulation.Field(Name, 'Er', theta=theta, units=units)
             elif self.Geo == "Car":
                 if units is None:
                     MetaData = self.Simulation.Field(Name, Field)
@@ -197,29 +195,27 @@ class Process():
             axis_names=['x', 'y']
         else: raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
 
-        Values = self.np.array(MetaData.getData())
-        if Diag == "ParticleBinning" and self.Geo == "Cyl":
-            if len(Values.shape)>3:
-                Values = self.np.array(self.Simulation.ParticleBinning(Name, units=units, average={"z":"all"}).getData())
-                print(f"\n\033[1;31m{Name} is 3 dimensional\033[0m\nAveraging over z")
+        axis ={}
+        axis["Time"] = self.np.round(MetaData.getTimes()-self.t0,2)
         self.TimeSteps = self.np.array(MetaData.getTimesteps())
-        if Diag == "Fields":
-            if self.Geo == "Cyl" and Name == "average fields":
+        if Diag == "Fields" and self.Geo == "Cyl":
+            Er = self.np.concatenate((-self.np.array(self.Simulation.Field(Name, 'Er', theta=theta + self.np.pi, units=units).getData())[..., ::-1], self.Simulation.Field(Name, 'Er', theta=theta, units=units).getData()), axis=-1)
+            Et = self.np.concatenate((-self.np.array(self.Simulation.Field(Name, 'Et', theta=theta + self.np.pi, units=units).getData())[..., ::-1], self.Simulation.Field(Name, 'Et', theta=theta, units=units).getData()), axis=-1)
+            if Field == "Ey":
+                Values = Er * self.np.sin(theta) + Et * self.np.cos(theta)
+            elif Field == "Ex":
+                Values = Er * self.np.cos(theta) - Et * self.np.sin(theta)
+            elif Field == "Ez":
+                try: El = self.np.concatenate((-self.np.array(self.Simulation.Field(Name, 'El', theta=theta + self.np.pi, units=units).getData())[..., ::-1], self.Simulation.Field(Name, 'El', theta=theta, units=units).getData()), axis=-1)
+                except ValueError: raise ValueError("El field not found")
+                Values = El
+            if Name == "average fields":
                 print('\n\033[1;31mAveraging fields over time\033[0m')
                 new_size = (Values.shape[0] // 10) * 10  # Make it a multiple of 10
                 Values = Values[:new_size]
                 self.TimeSteps = self.TimeSteps[:new_size]
                 self.TimeSteps = self.TimeSteps[::10]
                 Values = Values.reshape(-1, 10, Values.shape[1], Values.shape[2]).mean(axis=1)
-            self.max_number = float('-inf')  # Initialize max_number to negative infinity
-            for array in Values:
-                current_max = self.np.max(array)
-                if current_max > self.max_number:
-                    self.max_number = current_max
-        axis ={}
-        axis["Time"] = self.np.round(MetaData.getTimes()-self.t0,2)
-        if Diag == "Fields":
-            if self.Geo == "Cyl" and Name == "average fields":
                 axis["Time"] = axis["Time"][:new_size]
                 axis["Time"] = axis["Time"][::10]
                 arg=1
@@ -232,12 +228,24 @@ class Process():
                 axis["Time"] = axis["Time"][::arg]
                 self.TimeSteps = self.TimeSteps[::arg]
                 Values = Values[::arg]
+        else:
+            Values = self.np.array(MetaData.getData())
+        if Diag == "ParticleBinning" and self.Geo == "Cyl":
+            if len(Values.shape)>3:
+                Values = self.np.array(self.Simulation.ParticleBinning(Name, units=units, average={"z":"all"}).getData())
+                print(f"\n\033[1;31m{Name} is 3 dimensional\033[0m\nAveraging over z")
+        if Diag == "Fields":
+            self.max_number = float('-inf')  # Initialize max_number to negative infinity
+            for array in Values:
+                current_max = self.np.max(array)
+                if current_max > self.max_number:
+                    self.max_number = current_max
+                    
         bin_size = None
         for axis_name in axis_names:
-            if self.Geo == "Cyl" and Diag == "Fields" and axis_name == "x":
-                axis_data = self.np.array(MetaData.getAxis('axis1')[:,0])
-            elif self.Geo == "Cyl" and Diag == "Fields" and axis_name == "y":
-                axis_data = self.np.array(MetaData.getAxis('axis2')[:,1])
+            if self.Geo == "Cyl" and Diag == "Fields" and axis_name == "y":
+                axis_data = self.np.array(MetaData.getAxis('r'))
+                axis_data = self.np.concatenate((-axis_data[..., ::-1], axis_data), axis=-1)
             else:
                 axis_data = self.np.array(MetaData.getAxis(axis_name))
             if len(axis_data)==0:
