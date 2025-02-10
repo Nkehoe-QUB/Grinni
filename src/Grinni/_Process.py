@@ -1129,7 +1129,7 @@ class Process():
                 break
             ExField = self.np.reshape(self.np.mean(data['ex'][t][:, Ey_arg], axis=1), axis['ex']['x'].shape)
 
-            try: las_front[t] = axis['ey']['x'][self.np.argmax(ExField)]
+            try: las_front[t] = axis['ex']['x'][self.np.argmax(ExField)]
             except IndexError: las_front[t] = self.np.inf
 
         print(f"\nPlotting Laser-Ion-Fronts")
