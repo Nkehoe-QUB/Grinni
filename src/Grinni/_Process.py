@@ -1123,7 +1123,7 @@ class Process():
 
             ion_front[t] = axis['proton']['x'][self.np.argmax(Outline)]
 
-            try: Ex_mean = self.np.mean(data['ey'][t][:, Ey_arg], axis=1)
+            try: Ex_mean = self.np.mean(data['ex'][t][:, Ey_arg], axis=1)
             except IndexError:
                 num_times = t-1
                 break
