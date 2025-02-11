@@ -538,7 +538,7 @@ class Process():
                     ylabel = f"{Phase[1]} [kgm/s]"
                     clabel = 'dndpx [arb. units]'
                 ax.set(xlabel=xlabel, xlim=(min0 if XMin is None else XMin, max0 if XMax is None else XMax), 
-                       ylabel=ylabel, ylim=(min0 if YMin is None else YMin, max0 if YMax is None else YMax),
+                       ylabel=ylabel, ylim=(min1 if YMin is None else YMin, max1 if YMax is None else YMax),
                        title=f"{axis[type]['Time'][i]}fs")
                 if not Plotted:
                     cbar = fig.colorbar(cax, aspect=50)
