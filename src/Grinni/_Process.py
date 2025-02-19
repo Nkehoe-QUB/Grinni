@@ -988,7 +988,7 @@ class Process():
                     elif self.Dim == 3:
                         if FSpot != 0 : args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
                         else: args=self.np.argwhere(abs(axis[type]["y"])==self.np.min(abs(axis[type]["y"])))
-                        if data_to_plot[type][i].shape[1] > 2:
+                        if data_to_plot[type][i].shape > 2:
                             if not check:
                                 print("3D data detected, averaging over y-axis and z-axis")
                                 check=True
