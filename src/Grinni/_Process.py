@@ -970,6 +970,7 @@ class Process():
         print(f"\nPlotting line-out averaged over y±{FSpot/2}")
         SaveFile=File if File is not None else "y0"
         colours=['b','g','y','m','c']
+        check=False
         for i in range(self.TimeSteps.size):
             lnf=None
             fig, ax = self.plt.subplots(num=9,clear=True, sharex=True)
@@ -978,12 +979,23 @@ class Process():
                 ax.set_yscale('log')
                 ax.set_ylim(1e-2 if YMin is None else YMin, 1e3 if YMax is None else YMax)
                 for type in Species:
-                    if self.Dim == 2:
+                    if self.Dim == 1:
+                        lns=ax.plot(axis[type]['x'], data_to_plot[type][i][:], colours[Species.index(type)], label=f"{label[type]}")
+                    elif self.Dim == 2:
                         if FSpot != 0 : args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
                         else: args=self.np.argwhere(abs(axis[type]["y"])==self.np.min(abs(axis[type]["y"])))
                         lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), colours[Species.index(type)], label=f"{label[type]}")
-                    elif self.Dim==1:
-                        lns=ax.plot(axis[type]['x'], data_to_plot[type][i][:], colours[Species.index(type)], label=f"{label[type]}")
+                    elif self.Dim == 3:
+                        if FSpot != 0 : args=self.np.argwhere(abs(axis[type]["y"])<=(FSpot/2))
+                        else: args=self.np.argwhere(abs(axis[type]["y"])==self.np.min(abs(axis[type]["y"])))
+                        if data_to_plot[type][i].shape[1] > 2:
+                            if not check:
+                                print("3D data detected, averaging over y-axis and z-axis")
+                                check=True
+                            lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args,args],axis=1), colours[Species.index(type)], label=f"{label[type]}")
+                        else:
+                            lns=ax.plot(axis[type]['x'], self.np.mean(data_to_plot[type][i][:,args],axis=1), colours[Species.index(type)], label=f"{label[type]}")
+
                     lnf=lns if lnf is None else lnf+lns
                 ax.hlines(1, axis[type]['x'][0], axis[type]['x'][-1], 'k')
                 ax.text(-5 if XMin is None else XMin, 1, 'Critical Density', fontsize=8)
