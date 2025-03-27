@@ -146,7 +146,7 @@ class Process():
         Message += f"\nVideos will be saved in \033[1;32m{self.pros_path}\033[0m\n"
         if self.Log: print(Message)
 
-    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None, theta=0, dT=5):
+    def GetData(self, Diag, Name, Field=None, units=None, Data=True, Axis=True, ProsData=True, x_offset=None, y_offset=None, theta=0, dT=5, Z=None):
         # Check if Diag is a valid diagnostic
         if not self.Simulation.getDiags(Diag):
             raise ValueError(f"Diag '{Diag}' is not a valid diagnostic")
@@ -268,6 +268,8 @@ class Process():
                     Z=1
                 elif "electron" in Name:
                     Z=1
+                if Z is None:
+                    raise ValueError("Species Z not recognised or provided")
                 axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z)
                 for t in self.TimeSteps[1:]:
                     axis_data=self.np.vstack((axis_data, self.np.array(MetaData.getAxis('ekin', timestep=t)/Z)))
@@ -406,7 +408,7 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, 0, FinalFile, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
             
-    def SpectraPlot(self, Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True, SaveCSV=False, NoGrid=False):
+    def SpectraPlot(self, Species=[], XMax=None, YMin=None, YMax=None, File=None, ProsData=True, SaveCSV=False, NoGrid=False, Z=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -421,11 +423,11 @@ class Process():
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1] and type != "rel electron":
                 raise ValueError(f"Diagnostic '{type}' is not a valid spectra diagnostic")
             if type == "rel electron":
-                elec_den, axis[type] = self.GetData("ParticleBinning", "electron density", units=self.Units, ProsData=ProsData)
+                elec_den, axis[type] = self.GetData("ParticleBinning", "electron density", units=self.Units, ProsData=ProsData, Z=Z)
                 en_den = self.GetData("ParticleBinning", "electron energy density", Axis=False)
                 spect_to_plot[type] = self.np.array(elec_den) / ((self.np.array(en_den) / self.np.array(elec_den)) + 1)
                 continue
-            spect_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, ProsData=ProsData)
+            spect_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, ProsData=ProsData, Z=Z)
             label[type] = type
         
         print(f"\nPlotting {Species} spectra")
