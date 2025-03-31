@@ -476,7 +476,7 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, 0, self.TimeSteps.size, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
 
-    def PhaseSpacePlot(self, Species=[], Phase=None, CBMin=None, CBMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None):
+    def PhaseSpacePlot(self, Species=[], Phase=None, CBMin=None, CBMax=None, YMin=None, YMax=None, XMin=None, XMax=None, File=None, Z=None):
         if not Species:
             raise ValueError("No phase spaces were provided")
         if not isinstance(Species, list):
@@ -493,7 +493,7 @@ class Process():
             Diag=type + ' ' + Phase + ' phase space'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
                 raise ValueError(f"Diagnostic '{Diag}' is not a valid phase space diagnostic")
-            phase_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=self.x_spot)
+            phase_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=self.x_spot, Z=Z)
             phase_to_plot[type] = self.np.swapaxes(phase_to_plot[type], 1, 2)
             label[type] = type
             d_max[type] = round_up_scientific_notation(self.np.max(phase_to_plot[type]))
@@ -556,7 +556,7 @@ class Process():
                 MakeMovie(self.raw_path, self.pros_path, InitialFile, self.TimeSteps.size, SaveFile)
                 print(f"\nMovies saved in {self.pros_path}")
     
-    def AnglePlot(self, Species=[], CBMin=None, CBMax=None, XMax=None, YMin=None, YMax=None, LasAngle=None, File=None, SaveCSV=False):
+    def AnglePlot(self, Species=[], CBMin=None, CBMax=None, XMax=None, YMin=None, YMax=None, LasAngle=None, File=None, SaveCSV=False, Z=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -588,7 +588,7 @@ class Process():
             Diag=type + ' angle'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
                 raise ValueError(f"Diagnostic '{type}' is not a valid angle diagnostic")
-            angle_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10)
+            angle_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10, Z=Z)
             angle_to_plot[type] = self.np.swapaxes(angle_to_plot[type], 1, 2)
             label[type] = type
         
@@ -672,7 +672,7 @@ class Process():
             MakeMovie(self.raw_path, self.pros_path, InitalFile, self.TimeSteps.size, SaveFile)
             print(f"\nMovies saved in {self.pros_path}")
 
-    def AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False, NoGrid=False):
+    def AngleEnergyPlot(self, Species=[], YMin=None, YMax=None, Angles=[], AngleOffset=0, File=None, ProsData=True, DataOnly=False, NoGrid=False, Z=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -689,7 +689,7 @@ class Process():
             Diag=type + ' angle'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
                 raise ValueError(f"Diagnostic '{type}' is not a valid angle diagnostic")
-            angle_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10)
+            angle_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, x_offset=10, Z=Z)
             label[type] = type
         
         EMax=[]
@@ -876,7 +876,7 @@ class Process():
         self.plt.savefig(self.pros_path + '/' + SaveFile + '.png',dpi=200)
         print(f"\nCritical density surface saved in {self.raw_path}")
 
-    def EngTimePlot(self, Species=[], tMin=None, File=None):
+    def EngTimePlot(self, Species=[], tMin=None, File=None, Z=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -890,7 +890,7 @@ class Process():
             Diag=type + ' spectra'
             if Diag not in self.Simulation.getDiags("ParticleBinning")[1]:
                 raise ValueError(f"Diagnostic '{Diag}' is not a valid density diagnostic")
-            spectra_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units)
+            spectra_to_plot[type], axis[type] = self.GetData("ParticleBinning", Diag, units=self.Units, Z=Z)
             label[type] = type
         
         print(f"\nPlotting {Species} densities over time")
