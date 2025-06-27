@@ -556,7 +556,7 @@ class Process():
                 MakeMovie(self.raw_path, self.pros_path, InitialFile, self.TimeSteps.size, SaveFile)
                 print(f"\nMovies saved in {self.pros_path}")
     
-    def AnglePlot(self, Species=[], CBMin=None, CBMax=None, XMax=None, YMin=None, YMax=None, LasAngle=None, File=None, SaveCSV=False, Z=None):
+    def AnglePlot(self, Species=[], CBMin=None, CBMax=None, XMax=None, YMin=None, YMax=None, LasAngle=None, Integrate=None, File=None, SaveCSV=False, Z=None):
         if not Species:
             raise ValueError("No species were provided")
         if not isinstance(Species, list):
@@ -630,6 +630,9 @@ class Process():
                 cbar.set_label('dNdE [arb. units]')
                 if LasAngle is not None:
                     ax.vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
+                if Integrate is not None:
+                    if LasAngle is not None: ax.fill_betweenx(self.np.linspace(0, EMax[Species.index(type)], axis[type]['ekin'][i].shape[0]), self.np.radians(LasAngle - Integrate) , self.np.radians(LasAngle + Integrate), color='r', alpha=0.2)
+                    else: ax.fill_betweenx(self.np.linspace(0, EMax[Species.index(type)], axis[type]['ekin'][i].shape[0]), -self.np.radians(Integrate), self.np.radians(Integrate), color='r', alpha=0.2)
                 ax.set(xlim=(-self.np.pi if YMin is None else YMin,self.np.pi if YMax is None else YMax),
                         ylim=(0,EMax[0] if XMax is None else XMax[0]),
                         title=f"{label[type]}")
@@ -657,6 +660,9 @@ class Process():
                         cbar.set_label('dNdE [arb. units]')
                     if LasAngle is not None:
                         ax[Species.index(type)].vlines(self.np.radians(LasAngle), 0, EMax[Species.index(type)], colors='r', linestyles='dashed')
+                    if Integrate is not None:
+                        if LasAngle is not None: ax[Species.index(type)].fill_betweenx(self.np.linspace(0, EMax[Species.index(type)], axis[type]['ekin'][i].shape[0]), self.np.radians(LasAngle - Integrate) , self.np.radians(LasAngle + Integrate), color='r', alpha=0.2)
+                        else: ax[Species.index(type)].fill_betweenx(self.np.linspace(0, EMax[Species.index(type)], axis[type]['ekin'][i].shape[0]), -self.np.radians(Integrate), self.np.radians(Integrate), color='r', alpha=0.2)
                     ax[Species.index(type)].set(xlim=(-self.np.pi if YMin is None else YMin,self.np.pi if YMax is None else YMax),
                                                 ylim=(0,EMax[Species.index(type)] if XMax is None else (XMax[0] if len(XMax) ==1 else XMax[Species.index(type)])),
                                                 title=f"{label[type]}")
