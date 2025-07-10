@@ -269,7 +269,7 @@ class Process():
                 elif "electron" in Name:
                     Z=1
                 if Z is None:
-                    raise ValueError("Species Z not recognised or provided")
+                    raise ValueError("Species not recognised or number of nucleons (Z) not provided")
                 axis_data = self.np.array(MetaData.getAxis('ekin', timestep=self.TimeSteps[0])/Z)
                 for t in self.TimeSteps[1:]:
                     axis_data=self.np.vstack((axis_data, self.np.array(MetaData.getAxis('ekin', timestep=t)/Z)))
